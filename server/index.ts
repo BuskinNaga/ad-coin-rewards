@@ -21,6 +21,8 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+app.use(express.static("public"));
+app.use(express.static("client/public"));
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {

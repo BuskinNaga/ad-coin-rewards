@@ -5,12 +5,37 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
+import Login from "./pages/login";
+import Register from "./pages/register";
+import Dashboard from "./pages/dashboard";
+import WatchPage from "./pages/watch";
+import HistoryPage from "./pages/history";
+import WithdrawPage from "./pages/withdraw";
+import ReferralPage from "./pages/referral";
+import { AuthGuard } from "./components/layout/auth-guard";
+
 function Router() {
   return (
     <Switch>
-      {/* Add pages below */}
-      {/* <Route path="/" component={Home}/> */}
-      {/* Fallback to 404 */}
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      
+      <Route path="/">
+        <AuthGuard><Dashboard /></AuthGuard>
+      </Route>
+      <Route path="/watch">
+        <AuthGuard><WatchPage /></AuthGuard>
+      </Route>
+      <Route path="/history">
+        <AuthGuard><HistoryPage /></AuthGuard>
+      </Route>
+      <Route path="/withdraw">
+        <AuthGuard><WithdrawPage /></AuthGuard>
+      </Route>
+      <Route path="/referral">
+        <AuthGuard><ReferralPage /></AuthGuard>
+      </Route>
+
       <Route component={NotFound} />
     </Switch>
   );
@@ -20,8 +45,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
         <Router />
+        <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
   );

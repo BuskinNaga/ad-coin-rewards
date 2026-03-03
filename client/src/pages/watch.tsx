@@ -14,6 +14,24 @@ export default function WatchPage() {
   const [earned, setEarned] = useState(0);
 
   useEffect(() => {
+    // Monetag Onclick (Popunder) integration
+    const script = document.createElement('script');
+    script.dataset.zone = '10675926';
+    script.src = 'https://al5sm.com/tag.min.js';
+    
+    // Append to document body or head (matches user's logic)
+    const target = document.body || document.documentElement;
+    target.appendChild(script);
+
+    return () => {
+      // Clean up script when leaving the page
+      if (target.contains(script)) {
+        target.removeChild(script);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     let timer: NodeJS.Timeout;
     
     if (status === "watching" && timeLeft > 0) {

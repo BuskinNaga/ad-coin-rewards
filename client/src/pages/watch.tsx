@@ -5,52 +5,64 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Play, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import confetti from "canvas-confetti";
 
+function triggerMonetagAd(): Promise<void> {
+  return new Promise((resolve) => {
+    const existing = document.querySelector('script[data-zone="10675926"]');
+    if (existing) {
+      existing.remove();
+    }
+
+    const script = document.createElement("script");
+    script.dataset.zone = "10675926";
+    script.src = "https://al5sm.com/tag.min.js";
+
+    script.onload = () => {
+      setTimeout(() => {
+        script.remove();
+        resolve();
+      }, 300);
+    };
+
+    script.onerror = () => {
+      script.remove();
+      resolve();
+    };
+
+    document.body.appendChild(script);
+  });
+}
+
 export default function WatchPage() {
   const { data: user } = useUser();
   const reward = useReward();
-  
+
   const [status, setStatus] = useState<"idle" | "watching" | "success" | "error">("idle");
   const [timeLeft, setTimeLeft] = useState(10);
   const [earned, setEarned] = useState(0);
 
   useEffect(() => {
-    // Monetag Onclick (Popunder) integration
-    const script = document.createElement('script');
-    script.dataset.zone = '10675926';
-    script.src = 'https://al5sm.com/tag.min.js';
-    
-    // Append to document body or head (matches user's logic)
-    const target = document.body || document.documentElement;
-    target.appendChild(script);
-
-    return () => {
-      // Clean up script when leaving the page
-      if (target.contains(script)) {
-        target.removeChild(script);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
     let timer: NodeJS.Timeout;
-    
+
     if (status === "watching" && timeLeft > 0) {
       timer = setInterval(() => {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
     } else if (status === "watching" && timeLeft === 0) {
-      setStatus("idle"); // temporary state to prevent double fires
+      setStatus("idle");
       handleReward();
     }
 
     return () => clearInterval(timer);
   }, [status, timeLeft]);
 
-  const handleStartWatch = () => {
+  const handleStartWatch = async () => {
     if (user && user.dailyAdsWatched >= 50) {
       setStatus("error");
       return;
     }
+
+    await triggerMonetagAd();
+
     setStatus("watching");
     setTimeLeft(10);
   };
@@ -64,7 +76,7 @@ export default function WatchPage() {
       },
       onError: () => {
         setStatus("error");
-      }
+      },
     });
   };
 
@@ -78,14 +90,14 @@ export default function WatchPage() {
         angle: 60,
         spread: 55,
         origin: { x: 0 },
-        colors: ['#10b981', '#f59e0b', '#ffffff']
+        colors: ["#10b981", "#f59e0b", "#ffffff"],
       });
       confetti({
         particleCount: 5,
         angle: 120,
         spread: 55,
         origin: { x: 1 },
-        colors: ['#10b981', '#f59e0b', '#ffffff']
+        colors: ["#10b981", "#f59e0b", "#ffffff"],
       });
 
       if (Date.now() < end) {
@@ -141,24 +153,26 @@ export default function WatchPage() {
               className="text-center"
             >
               <div className="relative w-48 h-48 mx-auto mb-8">
-                {/* Simulated ad container */}
                 <div className="absolute inset-0 bg-secondary rounded-3xl overflow-hidden border border-white/5 flex items-center justify-center">
                   <div className="text-muted-foreground flex flex-col items-center">
                     <Loader2 className="w-8 h-8 animate-spin mb-2 text-primary" />
                     <span className="text-xs tracking-widest uppercase font-semibold">Sponsor Ad</span>
                   </div>
                 </div>
-                
-                {/* Circular timer overlay */}
+
                 <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
                   <circle
-                    cx="96" cy="96" r="90"
+                    cx="96"
+                    cy="96"
+                    r="90"
                     fill="none"
                     stroke="rgba(255,255,255,0.1)"
                     strokeWidth="4"
                   />
                   <motion.circle
-                    cx="96" cy="96" r="90"
+                    cx="96"
+                    cy="96"
+                    r="90"
                     fill="none"
                     stroke="#10b981"
                     strokeWidth="4"
@@ -168,7 +182,7 @@ export default function WatchPage() {
                     transition={{ duration: 1, ease: "linear" }}
                   />
                 </svg>
-                
+
                 <div className="absolute inset-0 flex items-center justify-center font-display font-bold text-4xl text-white drop-shadow-md">
                   {timeLeft}
                 </div>
@@ -217,8 +231,8 @@ export default function WatchPage() {
                 </div>
                 <h2 className="text-xl font-semibold mb-2">Oops!</h2>
                 <p className="text-muted-foreground mb-8">
-                  {user?.dailyAdsWatched! >= 50 
-                    ? "Daily limit reached. Come back tomorrow." 
+                  {user?.dailyAdsWatched! >= 50
+                    ? "Daily limit reached. Come back tomorrow."
                     : reward.error?.message || "Failed to claim reward. Try again."}
                 </p>
                 <button

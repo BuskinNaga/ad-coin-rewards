@@ -1,45 +1,68 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useReward } from "@/hooks/use-ads";
 import { useUser } from "@/hooks/use-auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import confetti from "canvas-confetti";
 
-function triggerMonetagAd(): Promise<void> {
-  return new Promise((resolve) => {
-    const existing = document.querySelector('script[data-zone="10675926"]');
-    if (existing) {
-      existing.remove();
-    }
+/**
+ * Monetag Onclick (Popunder) Ad — Isolation Strategy
+ *
+ * React 17+ processes events on the root container BEFORE they bubble to `document`.
+ * Monetag's script attaches its click listener on `document`.
+ *
+ * Flow:
+ *   click → [child elements] → #root (React processes here) → document (Monetag fires here)
+ *
+ * By calling e.nativeEvent.stopImmediatePropagation() inside our React wrapper div's
+ * onClick handler, we prevent the native event from continuing to `document` after
+ * React finishes processing — so Monetag's listener never fires.
+ *
+ * We ONLY allow clicks from the "Start Video" button to pass through.
+ */
 
-    const script = document.createElement("script");
-    script.dataset.zone = "10675926";
-    script.src = "https://al5sm.com/tag.min.js";
+let monetagScriptEl: HTMLScriptElement | null = null;
 
-    script.onload = () => {
-      setTimeout(() => {
-        script.remove();
-        resolve();
-      }, 300);
-    };
+function loadMonetagScript() {
+  if (monetagScriptEl) return;
+  const script = document.createElement("script");
+  script.dataset.zone = "10675926";
+  script.src = "https://al5sm.com/tag.min.js";
+  document.body.appendChild(script);
+  monetagScriptEl = script;
+}
 
-    script.onerror = () => {
-      script.remove();
-      resolve();
-    };
-
-    document.body.appendChild(script);
-  });
+function removeMonetagScript() {
+  if (monetagScriptEl) {
+    monetagScriptEl.remove();
+    monetagScriptEl = null;
+  }
 }
 
 export default function WatchPage() {
   const { data: user } = useUser();
   const reward = useReward();
+  const startButtonRef = useRef<HTMLButtonElement>(null);
 
   const [status, setStatus] = useState<"idle" | "watching" | "success" | "error">("idle");
   const [timeLeft, setTimeLeft] = useState(10);
   const [earned, setEarned] = useState(0);
 
+  useEffect(() => {
+    // Load Monetag script when Watch page mounts.
+    // It will wait silently until the Start Video button click passes through.
+    loadMonetagScript();
+
+    return () => {
+      // Remove script on unmount. Even though Monetag's listener remains on
+      // `document`, the wrapper-div propagation blocker (below) handles any
+      // lingering fires while the user is on other pages by ensuring future
+      // Monetag script loads are fresh.
+      removeMonetagScript();
+    };
+  }, []);
+
+  // Countdown + reward flow
   useEffect(() => {
     let timer: NodeJS.Timeout;
 
@@ -55,14 +78,32 @@ export default function WatchPage() {
     return () => clearInterval(timer);
   }, [status, timeLeft]);
 
-  const handleStartWatch = async () => {
+  /**
+   * Page-level click interceptor.
+   *
+   * Called for EVERY click on the Watch page.
+   * If the click did NOT originate from the Start Video button → stop the
+   * native event before it reaches `document`, so Monetag's listener never fires.
+   * If it DID come from the Start Video button → let it bubble to `document`
+   * naturally → Monetag fires the ad on that exact user gesture.
+   */
+  const handleWrapperClick = useCallback((e: React.MouseEvent) => {
+    const isStartButton = startButtonRef.current?.contains(e.target as Node);
+    if (!isStartButton) {
+      // Block native event from reaching document-level listeners (Monetag)
+      // React has already processed this event at #root, so React handlers still work.
+      e.nativeEvent.stopImmediatePropagation();
+    }
+  }, []);
+
+  const handleStartWatch = () => {
     if (user && user.dailyAdsWatched >= 50) {
       setStatus("error");
       return;
     }
-
-    await triggerMonetagAd();
-
+    // The click that triggered this handler is allowed to bubble to document,
+    // where Monetag fires the popunder ad on this exact user gesture.
+    // Start the 10-second countdown immediately after.
     setStatus("watching");
     setTimeLeft(10);
   };
@@ -83,32 +124,21 @@ export default function WatchPage() {
   const triggerConfetti = () => {
     const duration = 2000;
     const end = Date.now() + duration;
-
     const frame = () => {
-      confetti({
-        particleCount: 5,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0 },
-        colors: ["#10b981", "#f59e0b", "#ffffff"],
-      });
-      confetti({
-        particleCount: 5,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1 },
-        colors: ["#10b981", "#f59e0b", "#ffffff"],
-      });
-
-      if (Date.now() < end) {
-        requestAnimationFrame(frame);
-      }
+      confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ["#10b981", "#f59e0b", "#ffffff"] });
+      confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ["#10b981", "#f59e0b", "#ffffff"] });
+      if (Date.now() < end) requestAnimationFrame(frame);
     };
     frame();
   };
 
   return (
-    <div className="max-w-md mx-auto p-4 pt-12 min-h-[80vh] flex flex-col">
+    // This div intercepts ALL clicks on the Watch page.
+    // Only clicks from the Start Video button are allowed to reach document (Monetag).
+    <div
+      className="max-w-md mx-auto p-4 pt-12 min-h-[80vh] flex flex-col"
+      onClick={handleWrapperClick}
+    >
       <div className="text-center mb-10">
         <h1 className="text-3xl font-display font-bold mb-2">Watch & Earn</h1>
         <p className="text-muted-foreground">
@@ -134,7 +164,9 @@ export default function WatchPage() {
                 <p className="text-muted-foreground mb-8 text-sm px-4">
                   Watch a short 10-second sponsor video to earn 5 to 10 coins instantly.
                 </p>
+                {/* ref tied to this button so the wrapper div knows to let it through */}
                 <button
+                  ref={startButtonRef}
                   onClick={handleStartWatch}
                   className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-bold text-lg hover:bg-emerald-400 active:scale-95 transition-all shadow-lg shadow-primary/20"
                 >
@@ -151,6 +183,9 @@ export default function WatchPage() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               className="text-center"
+              // Disable all pointer events during countdown so no accidental
+              // taps can reach the wrapper's onClick (and thus Monetag)
+              style={{ pointerEvents: "none" }}
             >
               <div className="relative w-48 h-48 mx-auto mb-8">
                 <div className="absolute inset-0 bg-secondary rounded-3xl overflow-hidden border border-white/5 flex items-center justify-center">
@@ -161,18 +196,9 @@ export default function WatchPage() {
                 </div>
 
                 <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
-                  <circle
-                    cx="96"
-                    cy="96"
-                    r="90"
-                    fill="none"
-                    stroke="rgba(255,255,255,0.1)"
-                    strokeWidth="4"
-                  />
+                  <circle cx="96" cy="96" r="90" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4" />
                   <motion.circle
-                    cx="96"
-                    cy="96"
-                    r="90"
+                    cx="96" cy="96" r="90"
                     fill="none"
                     stroke="#10b981"
                     strokeWidth="4"

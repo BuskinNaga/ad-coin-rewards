@@ -1,71 +1,40 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useReward } from "@/hooks/use-ads";
 import { useUser } from "@/hooks/use-auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import confetti from "canvas-confetti";
 
-/**
- * Monetag Onclick (Popunder) Ad — Isolation Strategy
- *
- * React 17+ processes events on the root container BEFORE they bubble to `document`.
- * Monetag's script attaches its click listener on `document`.
- *
- * Flow:
- *   click → [child elements] → #root (React processes here) → document (Monetag fires here)
- *
- * By calling e.nativeEvent.stopImmediatePropagation() inside our React wrapper div's
- * onClick handler, we prevent the native event from continuing to `document` after
- * React finishes processing — so Monetag's listener never fires.
- *
- * We ONLY allow clicks from the "Start Video" button to pass through.
- */
-
-let monetagScriptEl: HTMLScriptElement | null = null;
-
-function loadMonetagScript() {
-  if (monetagScriptEl) return;
-  const script = document.createElement("script");
-  script.dataset.zone = "10675926";
-  script.src = "https://al5sm.com/tag.min.js";
-  document.body.appendChild(script);
-  monetagScriptEl = script;
-}
-
-function removeMonetagScript() {
-  if (monetagScriptEl) {
-    monetagScriptEl.remove();
-    monetagScriptEl = null;
-  }
-}
+const MONETAG_DIRECT_LINK = "https://omg10.com/4/10632799";
+const AD_DELAY_SECONDS = 3;
+const VIDEO_DURATION_SECONDS = 10;
 
 export default function WatchPage() {
   const { data: user } = useUser();
   const reward = useReward();
-  const startButtonRef = useRef<HTMLButtonElement>(null);
 
-  const [status, setStatus] = useState<"idle" | "watching" | "success" | "error">("idle");
-  const [timeLeft, setTimeLeft] = useState(10);
+  const [status, setStatus] = useState<"idle" | "ad-delay" | "watching" | "success" | "error">("idle");
+  const [timeLeft, setTimeLeft] = useState(VIDEO_DURATION_SECONDS);
+  const [delayLeft, setDelayLeft] = useState(AD_DELAY_SECONDS);
   const [earned, setEarned] = useState(0);
 
-  useEffect(() => {
-    // Load Monetag script when Watch page mounts.
-    // It will wait silently until the Start Video button click passes through.
-    loadMonetagScript();
-
-    return () => {
-      // Remove script on unmount. Even though Monetag's listener remains on
-      // `document`, the wrapper-div propagation blocker (below) handles any
-      // lingering fires while the user is on other pages by ensuring future
-      // Monetag script loads are fresh.
-      removeMonetagScript();
-    };
-  }, []);
-
-  // Countdown + reward flow
+  // Ad delay countdown before video starts
   useEffect(() => {
     let timer: NodeJS.Timeout;
+    if (status === "ad-delay" && delayLeft > 0) {
+      timer = setInterval(() => {
+        setDelayLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (status === "ad-delay" && delayLeft === 0) {
+      setStatus("watching");
+      setTimeLeft(VIDEO_DURATION_SECONDS);
+    }
+    return () => clearInterval(timer);
+  }, [status, delayLeft]);
 
+  // Video countdown
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
     if (status === "watching" && timeLeft > 0) {
       timer = setInterval(() => {
         setTimeLeft((prev) => prev - 1);
@@ -74,38 +43,21 @@ export default function WatchPage() {
       setStatus("idle");
       handleReward();
     }
-
     return () => clearInterval(timer);
   }, [status, timeLeft]);
 
-  /**
-   * Page-level click interceptor.
-   *
-   * Called for EVERY click on the Watch page.
-   * If the click did NOT originate from the Start Video button → stop the
-   * native event before it reaches `document`, so Monetag's listener never fires.
-   * If it DID come from the Start Video button → let it bubble to `document`
-   * naturally → Monetag fires the ad on that exact user gesture.
-   */
-  const handleWrapperClick = useCallback((e: React.MouseEvent) => {
-    const isStartButton = startButtonRef.current?.contains(e.target as Node);
-    if (!isStartButton) {
-      // Block native event from reaching document-level listeners (Monetag)
-      // React has already processed this event at #root, so React handlers still work.
-      e.nativeEvent.stopImmediatePropagation();
-    }
-  }, []);
-
-  const handleStartWatch = () => {
+  const handleStartVideo = () => {
     if (user && user.dailyAdsWatched >= 50) {
       setStatus("error");
       return;
     }
-    // The click that triggered this handler is allowed to bubble to document,
-    // where Monetag fires the popunder ad on this exact user gesture.
-    // Start the 10-second countdown immediately after.
-    setStatus("watching");
-    setTimeLeft(10);
+
+    // Open Monetag Direct Link ad in a new tab on the exact button click gesture
+    window.open(MONETAG_DIRECT_LINK, "_blank", "noopener,noreferrer");
+
+    // Wait a few seconds then start the video countdown
+    setDelayLeft(AD_DELAY_SECONDS);
+    setStatus("ad-delay");
   };
 
   const handleReward = () => {
@@ -133,12 +85,7 @@ export default function WatchPage() {
   };
 
   return (
-    // This div intercepts ALL clicks on the Watch page.
-    // Only clicks from the Start Video button are allowed to reach document (Monetag).
-    <div
-      className="max-w-md mx-auto p-4 pt-12 min-h-[80vh] flex flex-col"
-      onClick={handleWrapperClick}
-    >
+    <div className="max-w-md mx-auto p-4 pt-12 min-h-[80vh] flex flex-col">
       <div className="text-center mb-10">
         <h1 className="text-3xl font-display font-bold mb-2">Watch & Earn</h1>
         <p className="text-muted-foreground">
@@ -148,6 +95,7 @@ export default function WatchPage() {
 
       <div className="flex-1 flex flex-col items-center justify-center">
         <AnimatePresence mode="wait">
+
           {status === "idle" && (
             <motion.div
               key="idle"
@@ -164,14 +112,35 @@ export default function WatchPage() {
                 <p className="text-muted-foreground mb-8 text-sm px-4">
                   Watch a short 10-second sponsor video to earn 5 to 10 coins instantly.
                 </p>
-                {/* ref tied to this button so the wrapper div knows to let it through */}
                 <button
-                  ref={startButtonRef}
-                  onClick={handleStartWatch}
-                  className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-bold text-lg hover:bg-emerald-400 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                  onClick={handleStartVideo}
+                  className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-bold text-lg active:scale-95 transition-all shadow-lg shadow-primary/20"
                 >
                   Start Video
                 </button>
+              </div>
+            </motion.div>
+          )}
+
+          {status === "ad-delay" && (
+            <motion.div
+              key="ad-delay"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="text-center"
+            >
+              <div className="glass-card rounded-[2rem] p-8 border-t border-white/10 text-center">
+                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Loader2 className="w-9 h-9 animate-spin text-primary" />
+                </div>
+                <h2 className="text-xl font-semibold mb-2">Ad opened in new tab</h2>
+                <p className="text-muted-foreground text-sm mb-6">
+                  Your video will start in a moment...
+                </p>
+                <div className="text-5xl font-display font-bold text-primary my-2">
+                  {delayLeft}
+                </div>
               </div>
             </motion.div>
           )}
@@ -183,9 +152,6 @@ export default function WatchPage() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               className="text-center"
-              // Disable all pointer events during countdown so no accidental
-              // taps can reach the wrapper's onClick (and thus Monetag)
-              style={{ pointerEvents: "none" }}
             >
               <div className="relative w-48 h-48 mx-auto mb-8">
                 <div className="absolute inset-0 bg-secondary rounded-3xl overflow-hidden border border-white/5 flex items-center justify-center">
@@ -204,7 +170,7 @@ export default function WatchPage() {
                     strokeWidth="4"
                     strokeLinecap="round"
                     initial={{ pathLength: 1 }}
-                    animate={{ pathLength: timeLeft / 10 }}
+                    animate={{ pathLength: timeLeft / VIDEO_DURATION_SECONDS }}
                     transition={{ duration: 1, ease: "linear" }}
                   />
                 </svg>
@@ -236,7 +202,7 @@ export default function WatchPage() {
                 <p className="text-muted-foreground mb-8">Coins added to your balance.</p>
                 <button
                   onClick={() => setStatus("idle")}
-                  className="w-full py-4 rounded-2xl bg-secondary text-white font-semibold hover:bg-white/10 active:scale-95 transition-all"
+                  className="w-full py-4 rounded-2xl bg-secondary text-white font-semibold active:scale-95 transition-all"
                 >
                   Watch Another
                 </button>
@@ -257,19 +223,20 @@ export default function WatchPage() {
                 </div>
                 <h2 className="text-xl font-semibold mb-2">Oops!</h2>
                 <p className="text-muted-foreground mb-8">
-                  {user?.dailyAdsWatched! >= 50
+                  {user && user.dailyAdsWatched >= 50
                     ? "Daily limit reached. Come back tomorrow."
                     : reward.error?.message || "Failed to claim reward. Try again."}
                 </p>
                 <button
                   onClick={() => setStatus("idle")}
-                  className="w-full py-4 rounded-2xl bg-secondary text-white font-semibold hover:bg-white/10 active:scale-95 transition-all"
+                  className="w-full py-4 rounded-2xl bg-secondary text-white font-semibold active:scale-95 transition-all"
                 >
                   Go Back
                 </button>
               </div>
             </motion.div>
           )}
+
         </AnimatePresence>
       </div>
     </div>

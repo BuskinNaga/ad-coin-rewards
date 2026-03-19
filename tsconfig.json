@@ -4,15 +4,18 @@
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
-    "noEmit": true,
-    "module": "ESNext",
+    "noEmit": false,
+    "module": "ESNext",               // Changed from CommonJS to allow import.meta
+    "moduleResolution": "Bundler",    // Changed from node to allow .ts extensions
+    "target": "ESNext",               // Changed from ES2020 for top-level await
+    "outDir": "dist",
+    "rootDir": ".",
     "strict": true,
-    "lib": ["esnext", "dom", "dom.iterable"],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "jsx": "preserve",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
-    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": false,
     "baseUrl": ".",
     "types": ["node", "vite/client"],
     "paths": {

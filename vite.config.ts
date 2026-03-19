@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig({
-  base: "./", // important for SPA on Vercel
+  base: "/",
   plugins: [react()],
   resolve: {
     alias: {
@@ -14,7 +14,7 @@ export default defineConfig({
   },
   root: path.resolve(__dirname, "client"),
   build: {
-    outDir: path.resolve(__dirname, "dist/public"),
+    outDir: path.resolve(__dirname, "dist/public"), // SPA files go here
     emptyOutDir: true,
   },
 });

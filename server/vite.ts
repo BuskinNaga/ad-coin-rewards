@@ -1,8 +1,9 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import path from "path";
+import { fileURLToPath } from "url"; // Added for ESM safety
 import cookieParser from "cookie-parser";
-import { registerRoutes } from "./routes"; // your fixed routes
+import { registerRoutes } from "./routes";
 import { storage } from "./storage";
 
 const app: Express = express();
@@ -13,26 +14,30 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// === Setup ESM Dirname (Safe for all Node versions) ===
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // === API Routes ===
+// Using top-level await is fine because of our ESNext tsconfig
 await registerRoutes(httpServer, app);
 
 // === Serve SPA in production ===
 if (process.env.NODE_ENV === "production") {
-  const distPath = path.resolve(import.meta.dirname, "dist/public");
+  // We look for dist/public relative to this file
+  const distPath = path.resolve(__dirname, "../dist/public");
   app.use(express.static(distPath));
 
-  // For SPA routing: send index.html for all unmatched routes
-  app.get("*", (req, res) => {
+  // FIX: Using "*" instead of "(.*)" to avoid PathError
+  app.get("*", (_req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
 }
 
-// === Start Server (optional for local dev) ===
-if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT || 3000;
-  httpServer.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
+// === Start Server ===
+const PORT = process.env.PORT || 5000;
+httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log(`[server] Shop backend running on port ${PORT}`);
+});
 
 export { app, httpServer };

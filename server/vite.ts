@@ -1,58 +1,38 @@
-import { type Express } from "express";
-import { createServer as createViteServer, createLogger } from "vite";
-import { type Server } from "http";
-import viteConfig from "../vite.config";
-import fs from "fs";
+import express, { type Express } from "express";
+import { createServer, type Server } from "http";
 import path from "path";
-import { nanoid } from "nanoid";
+import cookieParser from "cookie-parser";
+import { registerRoutes } from "./routes"; // your fixed routes
+import { storage } from "./storage";
 
-const viteLogger = createLogger();
+const app: Express = express();
+const httpServer: Server = createServer(app);
 
-export async function setupVite(server: Server, app: Express) {
-  const serverOptions = {
-    middlewareMode: true,
-    hmr: { server, path: "/vite-hmr" },
-    allowedHosts: true as const,
-  };
+// === Middleware ===
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-  const vite = await createViteServer({
-    ...viteConfig,
-    configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
-      },
-    },
-    server: serverOptions,
-    appType: "custom",
-  });
+// === API Routes ===
+await registerRoutes(httpServer, app);
 
-  app.use(vite.middlewares);
+// === Serve SPA in production ===
+if (process.env.NODE_ENV === "production") {
+  const distPath = path.resolve(import.meta.dirname, "dist/public");
+  app.use(express.static(distPath));
 
-  app.use("/{*path}", async (req, res, next) => {
-    const url = req.originalUrl;
-
-    try {
-      const clientTemplate = path.resolve(
-        import.meta.dirname,
-        "..",
-        "client",
-        "index.html",
-      );
-
-      // always reload the index.html file from disk incase it changes
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
-      );
-      const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
-    } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
-      next(e);
-    }
+  // For SPA routing: send index.html for all unmatched routes
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
   });
 }
+
+// === Start Server (optional for local dev) ===
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 3000;
+  httpServer.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+export { app, httpServer };

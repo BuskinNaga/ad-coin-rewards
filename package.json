@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
-  "scripts": {
-    "dev": "concurrently \"tsx server/index.ts\" \"vite\"",
+    "scripts": {
+    "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "tsc && vite build",
     "start": "NODE_ENV=production npx tsx server/index.ts",
     "check": "tsc",

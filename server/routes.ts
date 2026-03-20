@@ -63,6 +63,7 @@ export async function registerRoutes(httpServer: any, app: Express) {
         ...input,
         password: hashedPassword,
         referralCode,
+        referredBy: input.referredBy ?? undefined,
       });
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });

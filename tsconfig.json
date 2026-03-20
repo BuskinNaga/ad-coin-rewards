@@ -1,21 +1,17 @@
 {
   "include": ["client/src/**/*", "shared/**/*", "server/**/*"],
-  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
+  "exclude": ["node_modules", "dist", "api"],
   "compilerOptions": {
-    "incremental": true,
-    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
-    "noEmit": false,
-    "module": "ESNext",               // Changed from CommonJS to allow import.meta
-    "moduleResolution": "Bundler",    // Changed from node to allow .ts extensions
-    "target": "ESNext",               // Changed from ES2020 for top-level await
-    "outDir": "dist",
-    "rootDir": ".",
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ESNext",
     "strict": true,
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "jsx": "preserve",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": false,
+    "allowImportingTsExtensions": true,
     "baseUrl": ".",
     "types": ["node", "vite/client"],
     "paths": {

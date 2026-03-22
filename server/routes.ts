@@ -60,11 +60,12 @@ export async function registerRoutes(httpServer: any, app: Express) {
       const referralCode = crypto.randomBytes(4).toString("hex").toUpperCase();
 
       const user = await storage.createUser({
-        ...input,
-        password: hashedPassword,
-        referralCode,
-        referredBy: input.referredBy ?? undefined,
-      });
+  username: input.username,
+  email: input.email,
+  password: hashedPassword,
+  referralCode,
+  referredBy: input.referredBy ?? undefined,
+});
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
       res.cookie("auth_token", token, COOKIE_OPTS);

@@ -17,4 +17,7 @@ export default defineConfig({
     outDir: path.resolve(__dirname, "dist/public"), // SPA files go here
     emptyOutDir: true,
   },
+server: {
+  allowedHosts: true
+}
 });

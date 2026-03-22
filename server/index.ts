@@ -2,6 +2,7 @@ import express from "express";
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs"; 
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 
@@ -21,26 +22,36 @@ await registerRoutes(httpServer, app);
 const isProd = process.env.NODE_ENV === "production";
 
 if (isProd) {
-  // Production: serve the Vite-built SPA from dist/public
   const distPath = path.resolve(__dirname, "../dist/public");
   app.use(express.static(distPath));
 
-  // Express 5 catch-all: serve index.html for any non-API route
-  app.get("/{*path}", (_req, res) => {
+  app.get(/^(?!\/api).+/, (_req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
 } else {
-  // Development: mount Vite as middleware so the React app and
-  // the Express API are served on the same port with full HMR.
   const { createServer: createViteServer } = await import("vite");
   const vite = await createViteServer({
     server: { middlewareMode: true },
     appType: "spa",
   });
+
   app.use(vite.middlewares);
+
+  app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+    const url = req.originalUrl;
+    try {
+      const templatePath = path.resolve(__dirname, "..", "client", "index.html");
+      let template = fs.readFileSync(templatePath, "utf-8");
+      template = await vite.transformIndexHtml(url, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(template);
+    } catch (e) {
+      vite.ssrFixStacktrace(e as Error);
+      next(e);
+    }
+  });
 }
 
-// ── Port startup with automatic fallback ─────────────────────────────
 const BASE_PORT = Number(process.env.PORT) || 5000;
 
 function startServer(port: number): void {
@@ -54,8 +65,9 @@ function startServer(port: number): void {
       process.exit(1);
     }
   });
+
   httpServer.listen(port, "0.0.0.0", () => {
-    console.log(`[server] Running on http://localhost:${port}`);
+    console.log(`[server] Running on http://0.0.0.0:${port}`);
   });
 }
 

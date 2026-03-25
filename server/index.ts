@@ -4,7 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs"; 
 import cookieParser from "cookie-parser";
-import { registerRoutes } from "./routes";
+import { registerRoutes } from "./routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,11 +31,16 @@ if (isProd) {
 } else {
   const { createServer: createViteServer } = await import("vite");
   const vite = await createViteServer({
-    server: { middlewareMode: true },
+    server: { 
+      middlewareMode: true,
+      hmr: { server: httpServer }
+    },
     appType: "spa",
   });
 
+  // This handles everything: static files, HMR, and serving index.html
   app.use(vite.middlewares);
+}
 
   app.use(async (req, res, next) => {
   if (req.path.startsWith('/api')) return next();
@@ -50,7 +55,6 @@ if (isProd) {
       next(e);
     }
   });
-}
 
 const BASE_PORT = Number(process.env.PORT) || 5000;
 

@@ -2,18 +2,24 @@
   "include": ["client/src/**/*", "shared/**/*", "server/**/*"],
   "exclude": ["node_modules", "dist", "api"],
   "compilerOptions": {
-    "noEmit": true,
+    "noEmit": false,
+    "outDir": "dist",                // ✅ ADD THIS
+    "rootDir": ".",                 // ✅ ADD THIS
+
     "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "moduleResolution": "node",     // 🔥 CHANGE THIS (VERY IMPORTANT)
     "target": "ESNext",
+
     "strict": true,
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "jsx": "preserve",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
+
+    "allowImportingTsExtensions": false,
     "baseUrl": ".",
     "types": ["node", "vite/client"],
+
     "paths": {
       "@/*": ["./client/src/*"],
       "@shared/*": ["./shared/*"]

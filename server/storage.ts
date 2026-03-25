@@ -1,5 +1,5 @@
-import { db } from "./db";
-import { users, history, type InsertUser, type User, type History } from "@shared/schema";
+import { db } from "./db.js"; // ✅ ADD THIS LINE
+import { users, history, type InsertUser, type User, type History } from "../shared/schema.js";
 import { eq } from "drizzle-orm";
 
 export interface IStorage {

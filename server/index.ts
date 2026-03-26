@@ -4,7 +4,12 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import cookieParser from "cookie-parser";
-import cors from "cors"; // ✅ ADD THIS
+import cors from "cors";
+
+app.use(cors({
+  origin: "*",
+  credentials: true,
+}));
 import { registerRoutes } from "./routes.js";
 
 const __filename = fileURLToPath(import.meta.url);

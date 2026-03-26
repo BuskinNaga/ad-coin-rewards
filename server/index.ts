@@ -2,8 +2,9 @@ import express from "express";
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs"; 
+import fs from "fs";
 import cookieParser from "cookie-parser";
+import cors from "cors"; // ✅ ADD THIS
 import { registerRoutes } from "./routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -11,6 +12,12 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
+
+// ✅ CORS FIX (VERY IMPORTANT)
+app.use(cors({
+  origin: "https://0c0255b0-0179-4582-8346-503e3306424b-00-z6vy6x934mov.kirk.replit.dev/watch", // 🔥 REPLACE THIS
+  credentials: true,
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -21,6 +28,8 @@ await registerRoutes(httpServer, app);
 
 const isProd = process.env.NODE_ENV === "production";
 
+let vite: any; // ✅ FIX (so vite is accessible below)
+
 if (isProd) {
   const distPath = path.resolve(__dirname, "../dist/public");
   app.use(express.static(distPath));
@@ -30,20 +39,21 @@ if (isProd) {
   });
 } else {
   const { createServer: createViteServer } = await import("vite");
-  const vite = await createViteServer({
-    server: { 
+  vite = await createViteServer({
+    server: {
       middlewareMode: true,
       hmr: { server: httpServer }
     },
     appType: "spa",
   });
 
-  // This handles everything: static files, HMR, and serving index.html
   app.use(vite.middlewares);
 }
 
+// ✅ FIXED: only use this in dev (vite exists)
+if (!isProd) {
   app.use(async (req, res, next) => {
-  if (req.path.startsWith('/api')) return next();
+    if (req.path.startsWith('/api')) return next();
     const url = req.originalUrl;
     try {
       const templatePath = path.resolve(__dirname, "..", "client", "index.html");
@@ -55,6 +65,7 @@ if (isProd) {
       next(e);
     }
   });
+}
 
 const BASE_PORT = Number(process.env.PORT) || 5000;
 

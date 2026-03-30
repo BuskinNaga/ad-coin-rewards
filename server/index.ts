@@ -1,21 +1,22 @@
 import express from "express";
+import cors from 'cors';
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import cookieParser from "cookie-parser";
-import cors from "cors";
+const app = express();
 
 app.use(cors({
-  origin: "*",
-  credentials: true,
+ origin: "*",
+  credentials: true
 }));
 import { registerRoutes } from "./routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
+
 const httpServer = createServer(app);
 
 // ✅ CORS FIX (VERY IMPORTANT)

@@ -1,4 +1,4 @@
-import { db } from "./db.js"; // ✅ ADD THIS LINE
+import { db } from "./db.js";
 import { users, history, type InsertUser, type User, type History } from "../shared/schema.js";
 import { eq } from "drizzle-orm";
 
@@ -6,6 +6,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByReferralCode(code: string): Promise<User | undefined>;
   createUser(user: InsertUser & { referralCode: string; referredBy?: string }): Promise<User>;
   updateUserCoins(id: number, coinsToAdd: number): Promise<User>;
   addHistory(record: Omit<History, "id" | "date">): Promise<History>;
@@ -29,6 +30,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByReferralCode(code: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.referralCode, code));
+    return user;
+  }
+
   async createUser(insertUser: InsertUser & { referralCode: string; referredBy?: string }): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
@@ -44,7 +50,8 @@ export class DatabaseStorage implements IStorage {
     const isNewDay = !user.lastAdDate || user.lastAdDate < today;
     const dailyAdsWatched = isNewDay ? 1 : user.dailyAdsWatched + 1;
 
-    const [updated] = await db.update(users)
+    const [updated] = await db
+      .update(users)
       .set({
         coins: user.coins + coinsToAdd,
         totalEarned: user.totalEarned + coinsToAdd,
@@ -53,7 +60,7 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(users.id, id))
       .returning();
-      
+
     return updated;
   }
 
@@ -63,7 +70,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getHistory(userId: number): Promise<History[]> {
-    return await db.select().from(history).where(eq(history.userId, userId)).orderBy(history.date);
+    return await db
+      .select()
+      .from(history)
+      .where(eq(history.userId, userId))
+      .orderBy(history.date);
   }
 
   async checkDailyLimit(userId: number): Promise<boolean> {
@@ -76,7 +87,8 @@ export class DatabaseStorage implements IStorage {
     if (user.lastAdDate && user.lastAdDate >= today) {
       return user.dailyAdsWatched < 50;
     }
-    return true; // new day
+
+    return true;
   }
 }
 

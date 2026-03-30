@@ -34,8 +34,8 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
 
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  secure: true,
+  sameSite: "none" as const,
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
@@ -147,6 +147,23 @@ export async function registerRoutes(httpServer: any, app: Express) {
 
       const coinsEarned = Math.floor(Math.random() * 6) + 5;
       const updatedUser = await storage.updateUserCoins(userId, coinsEarned);
+      const currentUser = await storage.getUser(userId);
+
+if (currentUser?.referredBy) {
+  const referrer = await storage.getUserByReferralCode(currentUser.referredBy);
+
+  if (referrer) {
+    const bonus = Math.floor(coinsEarned * 0.1); // 10%
+
+    await storage.updateUserCoins(referrer.id, bonus);
+
+    await storage.addHistory({
+      userId: referrer.id,
+      coinsEarned: bonus,
+      type: "referral",
+    });
+  }
+}
 
       await storage.addHistory({ userId, coinsEarned, type: "ad" });
 

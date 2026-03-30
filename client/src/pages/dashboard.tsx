@@ -157,6 +157,42 @@ export default function Dashboard() {
 
       {/* ── Quick Actions ── */}
       <div className="space-y-4">
+        {/* —— Referral Section —— */}
+      <div className="glass-card rounded-3xl p-5 mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 bg-purple-500/20 rounded-2xl flex items-center justify-center text-purple-400">
+            <Users className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-lg">Invite & Earn</h3>
+            <p className="text-sm text-muted-foreground">
+              Earn 10% of your friends' mining rewards
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+              Your Referral Code
+            </p>
+            <div className="px-4 py-3 rounded-2xl bg-black/20 border border-white/10 font-bold text-lg tracking-widest text-center">
+              {user.referralCode}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+              Your Referral Link
+            </p>
+            <input
+              readOnly
+              value={`${window.location.origin}/register?ref=${user.referralCode}`}
+              className="w-full px-4 py-3 rounded-2xl bg-black/20 border border-white/10 text-sm text-foreground"
+            />
+          </div>
+        </div>
+      </div>
         <h3 className="font-display font-semibold text-lg ml-2">Quick Actions</h3>
 
         <Link href="/watch">

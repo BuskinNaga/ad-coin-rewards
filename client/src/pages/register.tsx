@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRegister } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
@@ -8,11 +8,25 @@ export default function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [referralCode, setReferralCode] = useState("");
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get("ref");
+
+  if (ref) {
+    setReferralCode(ref.toUpperCase());
+  }
+}, []);
   const register = useRegister();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    register.mutate({ username, email, password });
+    register.mutate({
+      username,
+      email,
+      password,
+      referredBy: referralCode || undefined,
+    });
   };
 
   return (
@@ -21,7 +35,7 @@ export default function Register() {
       <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-primary/20 rounded-full blur-[100px]" />
       <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-accent/20 rounded-full blur-[100px]" />
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
@@ -31,14 +45,23 @@ export default function Register() {
           <div className="w-16 h-16 bg-gradient-to-tr from-accent to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-accent/30 mb-6 -rotate-12">
             <Coins className="w-8 h-8 text-white rotate-12" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-display font-bold text-white">Join CashFlow</h1>
-          <p className="text-muted-foreground mt-2">Start earning coins today.</p>
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-white">
+            Join CashFlow
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Start earning coins today.
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="glass-card p-6 md:p-8 rounded-3xl w-full">
+        <form
+          onSubmit={handleSubmit}
+          className="glass-card p-6 md:p-8 rounded-3xl w-full"
+        >
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5 ml-1">Username</label>
+              <label className="block text-sm font-medium text-foreground mb-1.5 ml-1">
+                Username
+              </label>
               <input
                 type="text"
                 required
@@ -50,7 +73,9 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5 ml-1">Email</label>
+              <label className="block text-sm font-medium text-foreground mb-1.5 ml-1">
+                Email
+              </label>
               <input
                 type="email"
                 required
@@ -60,9 +85,11 @@ export default function Register() {
                 placeholder="your@email.com"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5 ml-1">Password</label>
+              <label className="block text-sm font-medium text-foreground mb-1.5 ml-1">
+                Password
+              </label>
               <input
                 type="password"
                 required
@@ -70,6 +97,20 @@ export default function Register() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3.5 rounded-2xl bg-black/20 border border-white/5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
                 placeholder="Create a strong password"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5 ml-1">
+                Referral Code{" "}
+                <span className="text-muted-foreground">(Optional)</span>
+              </label>
+              <input
+                type="text"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                className="w-full px-4 py-3.5 rounded-2xl bg-black/20 border border-white/5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
+                placeholder="Enter referral code"
               />
             </div>
 
@@ -91,7 +132,10 @@ export default function Register() {
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/login" className="text-accent font-semibold hover:text-amber-400 transition-colors">
+            <Link
+              href="/login"
+              className="text-accent font-semibold hover:text-amber-400 transition-colors"
+            >
               Sign In
             </Link>
           </div>

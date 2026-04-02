@@ -80,10 +80,16 @@ export async function registerRoutes(httpServer: any, app: Express) {
         referralCode: user.referralCode,
       });
     } catch (err) {
-      if (err instanceof z.ZodError)
-        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join(".") });
-      return res.status(500).json({ message: "Internal server error" });
-    }
+  console.error("REGISTER ERROR:", err);
+
+  if (err instanceof z.ZodError)
+    return res.status(400).json({
+      message: err.errors[0].message,
+      field: err.errors[0].path.join("."),
+    });
+
+  return res.status(500).json({ message: "Internal server error" });
+}
   });
 
   app.post(api.auth.login.path, async (req: Request, res: Response) => {
@@ -111,10 +117,13 @@ export async function registerRoutes(httpServer: any, app: Express) {
         referralCode: user.referralCode,
       });
     } catch (err) {
-      if (err instanceof z.ZodError)
-        return res.status(400).json({ message: err.errors[0].message });
-      return res.status(500).json({ message: "Internal server error" });
-    }
+  console.error("LOGIN ERROR:", err);
+
+  if (err instanceof z.ZodError)
+    return res.status(400).json({ message: err.errors[0].message });
+
+  return res.status(500).json({ message: "Internal server error" });
+}
   });
 
   app.get(api.auth.me.path, authMiddleware, async (req: Request, res: Response) => {

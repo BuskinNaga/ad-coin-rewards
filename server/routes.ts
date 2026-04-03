@@ -35,7 +35,7 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
 const COOKIE_OPTS = {
   httpOnly: true,
   secure: true,
-  sameSite: "none" as const,
+  sameSite: "lax" as const,
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 

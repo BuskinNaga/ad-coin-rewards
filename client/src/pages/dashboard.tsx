@@ -142,7 +142,7 @@ const telegramShare = () => {
     <div className="max-w-xl mx-auto p-4 pt-8 md:pt-12">
       <header className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-display font-bold">Hello, {user.username} ✋‘‹</h1>
+          <h1 className="text-2xl font-display font-bold">Hello, {user.username} 👋‹</h1>
           <p className="text-muted-foreground text-sm">Ready to earn some cash?</p>
         </div>
 
@@ -230,7 +230,7 @@ const telegramShare = () => {
             </div>
 
             <div className="inline-block px-3 py-1 bg-black/20 rounded-full text-sm font-medium text-white/90 backdrop-blur-sm">
-              💲ˆ ${usdtEquivalent} USDT
+              ≈ ${usdtEquivalent} USDT
             </div>
           </div>
 
@@ -253,42 +253,33 @@ const telegramShare = () => {
       </motion.div>
 
       <div className="grid grid-cols-2 gap-4 mb-6">
-  <div className="glass-card rounded-3xl p-4 flex items-center gap-3 border border-primary/10">
-    <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 shrink-0">
-      <Users className="w-6 h-6" />
-    </div>
+        {/* Community card */}
+        <div className="glass-card rounded-3xl p-4 flex flex-col items-center justify-center gap-2 border border-primary/10 text-center">
+          <div className="w-10 h-10 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400">
+            <Users className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="font-semibold text-sm leading-tight">Community</h4>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {totalUsers.toLocaleString()} users
+            </p>
+          </div>
+        </div>
 
-    <div>
-      <h4 className="font-semibold text-base">Community</h4>
-      <p className="text-xs text-muted-foreground">
-        {totalUsers.toLocaleString()} users
-      </p>
-    </div>
-  </div>
-
-  <div className="glass-card rounded-3xl p-4 flex items-center justify-between border border-primary/10">
-    <div className="flex items-center gap-3 min-w-0">
-      <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center text-white shrink-0">
-        <Pickaxe className="w-6 h-6" />
+        {/* Daily Mine card */}
+        <div className="glass-card rounded-3xl p-4 flex flex-col items-center justify-center gap-3 border border-primary/10">
+          <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center text-white">
+            <Pickaxe className="w-5 h-5" />
+          </div>
+          <Button
+            onClick={handleMine}
+            disabled={!canMine}
+            className="w-full rounded-2xl text-sm py-1.5"
+          >
+            {canMine ? "Mine" : "Locked"}
+          </Button>
+        </div>
       </div>
-
-      <div className="min-w-0">
-        <h4 className="font-semibold text-base truncate">Daily Mining</h4>
-        <p className="text-xs text-muted-foreground truncate">
-          +2 Coins Ready
-        </p>
-      </div>
-    </div>
-
-    <Button
-      onClick={handleMine}
-      disabled={!canMine}
-      className="ml-2 shrink-0 rounded-2xl px-4"
-    >
-      {canMine ? "Mine" : "Locked"}
-    </Button>
-  </div>
-</div>
 
       <div className="space-y-4">
         <div className="glass-card rounded-3xl p-5 mb-8">
@@ -353,7 +344,7 @@ const telegramShare = () => {
             </div>
             <div className="flex-1">
               <h4 className="font-semibold">Watch & Earn</h4>
-              <p className="text-sm text-muted-foreground mt-0.5">Earn 5â€“10 coins per ad</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Earn 5 - 10 coins per ad</p>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
           </div>

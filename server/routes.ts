@@ -153,12 +153,12 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       const coinsEarned = Math.floor(Math.random() * 6) + 5;
       const updatedUser = await storage.updateUserCoins(userId, coinsEarned);
 
-      // Referral bonus: 10% of coins go to referrer
+      // Referral bonus: 2% lifetime commission to referrer
       const currentUser = await storage.getUser(userId);
       if (currentUser?.referredBy) {
         const referrer = await storage.getUserByReferralCode(currentUser.referredBy);
         if (referrer) {
-          const bonus = Math.floor(coinsEarned * 0.1);
+          const bonus = Math.max(1, Math.floor(coinsEarned * 0.02));
           await storage.updateUserCoins(referrer.id, bonus);
           await storage.addHistory({ userId: referrer.id, coinsEarned: bonus, type: "referral" });
         }
@@ -198,6 +198,19 @@ export async function registerRoutes(httpServer: Server, app: Express) {
 
       const reward = 20;
       const updatedUser = await storage.updateMineReward(req.userId!, reward);
+
+      // Referral bonus: 2% lifetime commission to referrer on mining too
+      if (user.referredBy) {
+        const referrer = await storage.getUserByReferralCode(user.referredBy);
+        if (referrer) {
+          const bonus = Math.max(1, Math.floor(reward * 0.02));
+          await storage.updateUserCoins(referrer.id, bonus);
+          await storage.addHistory({ userId: referrer.id, coinsEarned: bonus, type: "referral" });
+        }
+      }
+
+      await storage.addHistory({ userId: req.userId!, coinsEarned: reward, type: "mine" });
+
       return res.status(200).json({ message: `You mined ${reward} coins!`, coins: updatedUser.coins });
     } catch (err) {
       console.error("MINE ERROR:", err);
@@ -214,6 +227,33 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     } catch (err) {
       console.error("USERS COUNT ERROR:", err);
       return res.status(500).json({ count: 0 });
+    }
+  });
+
+  // ── REFERRALS ────────────────────────────────────────────────────────
+
+  app.get("/api/referrals", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUser(req.userId!);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      const referrals = await storage.getReferralsByCode(user.referralCode);
+      const history = await storage.getHistory(req.userId!);
+      const totalEarned = history
+        .filter((h) => h.type === "referral")
+        .reduce((sum, h) => sum + h.coinsEarned, 0);
+
+      return res.status(200).json({
+        count: referrals.length,
+        totalEarned,
+        referrals: referrals.map((r) => ({
+          username: r.username,
+          joinedAt: r.id,
+        })),
+      });
+    } catch (err) {
+      console.error("REFERRALS ERROR:", err);
+      return res.status(500).json({ message: "Failed to fetch referrals" });
     }
   });
 

@@ -196,7 +196,7 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         return res.status(400).json({ message: `You can mine again in ${hours}h ${minutes}m` });
       }
 
-      const reward = 10;
+      const reward = 20;
       const updatedUser = await storage.updateMineReward(req.userId!, reward);
       return res.status(200).json({ message: `You mined ${reward} coins!`, coins: updatedUser.coins });
     } catch (err) {

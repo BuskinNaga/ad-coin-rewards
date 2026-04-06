@@ -22,7 +22,8 @@ import {
   Menu,
   Pickaxe,
   MessageCircle,
-Send,
+  Send,
+  Clock,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -69,18 +70,17 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
   useEffect(() => {
-  const fetchTotalUsers = async () => {
-    try {
-      const res = await fetch("/api/users/count");
-      const data = await res.json();
-      setTotalUsers(data.totalUsers || 0);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  fetchTotalUsers();
-}, []);
+    const fetchTotalUsers = async () => {
+      try {
+        const res = await fetch("/api/users/count");
+        const data = await res.json();
+        setTotalUsers(data.count || 0);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchTotalUsers();
+  }, []);
 
   const formatTime = (ms: number) => {
     const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -94,13 +94,17 @@ export default function Dashboard() {
     if (!canMine) return;
 
     try {
-      await fetch("/api/mine", {
+      const res = await fetch("/api/mine", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ reward: 2 }),
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
       });
+
+      if (!res.ok) {
+        const data = await res.json();
+        console.error("Mine error:", data.message);
+        return;
+      }
 
       localStorage.setItem("lastMineTime", Date.now().toString());
       setCanMine(false);
@@ -267,17 +271,30 @@ const telegramShare = () => {
         </div>
 
         {/* Daily Mine card */}
-        <div className="glass-card rounded-3xl p-4 flex flex-col items-center justify-center gap-3 border border-primary/10">
-          <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center text-white">
-            <Pickaxe className="w-5 h-5" />
+        <div className="glass-card rounded-3xl p-4 flex flex-col items-center justify-center gap-2 border border-primary/10 text-center">
+          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white ${canMine ? "bg-gradient-to-br from-yellow-500 to-orange-600" : "bg-muted"}`}>
+            {canMine ? <Pickaxe className="w-5 h-5" /> : <Clock className="w-5 h-5 text-muted-foreground" />}
           </div>
-          <Button
-            onClick={handleMine}
-            disabled={!canMine}
-            className="w-full rounded-2xl text-sm py-1.5"
-          >
-            {canMine ? "Mine" : "Locked"}
-          </Button>
+
+          {canMine ? (
+            <>
+              <p className="text-xs text-muted-foreground leading-tight">+20 coins</p>
+              <Button
+                onClick={handleMine}
+                className="w-full rounded-2xl text-sm py-1.5"
+                data-testid="button-mine"
+              >
+                Mine
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-[10px] text-muted-foreground leading-tight">Next mine in</p>
+              <p className="text-xs font-mono font-semibold text-yellow-500 leading-tight tabular-nums">
+                {formatTime(miningTimeLeft)}
+              </p>
+            </>
+          )}
         </div>
       </div>
 

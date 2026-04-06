@@ -1,78 +1,57 @@
 import express from "express";
-import cors from 'cors';
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs";
 import cookieParser from "cookie-parser";
-const app = express();
-
-app.use(cors({
- origin: "*",
-  credentials: true
-}));
 import { registerRoutes } from "./routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
+const app = express();
 const httpServer = createServer(app);
-
-// ✅ CORS FIX (VERY IMPORTANT)
-app.use(cors({
-  origin: "https://0c0255b0-0179-4582-8346-503e3306424b-00-z6vy6x934mov.kirk.replit.dev/watch", // 🔥 REPLACE THIS
-  credentials: true,
-}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Register all API routes first
+// Register all API routes before the frontend middleware
 await registerRoutes(httpServer, app);
 
 const isProd = process.env.NODE_ENV === "production";
 
-let vite: any; // ✅ FIX (so vite is accessible below)
-
 if (isProd) {
+  // Production: serve the Vite-built SPA from dist/public
   const distPath = path.resolve(__dirname, "../dist/public");
   app.use(express.static(distPath));
-
-  app.get(/^(?!\/api).+/, (_req, res) => {
+  // Express 5 catch-all — send index.html for every non-API route
+  app.get("/{*path}", (_req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
 } else {
+  // Development: mount Vite as Express middleware so React + API
+  // are served on the same port with full HMR support.
   const { createServer: createViteServer } = await import("vite");
-  vite = await createViteServer({
+  const vite = await createViteServer({
     server: {
       middlewareMode: true,
-      hmr: { server: httpServer }
+      // Attach HMR WebSocket to the existing HTTP server so no
+      // extra port (24678) is opened — avoids port-already-in-use errors.
+      hmr: { server: httpServer },
     },
     appType: "spa",
   });
-
   app.use(vite.middlewares);
 }
 
-// ✅ FIXED: only use this in dev (vite exists)
-if (!isProd) {
-  app.use(async (req, res, next) => {
-    if (req.path.startsWith('/api')) return next();
-    const url = req.originalUrl;
-    try {
-      const templatePath = path.resolve(__dirname, "..", "client", "index.html");
-      let template = fs.readFileSync(templatePath, "utf-8");
-      template = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(template);
-    } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
-      next(e);
-    }
-  });
+// ── Graceful shutdown — releases the port so restarts never hit EADDRINUSE ──
+function shutdown() {
+  httpServer.close(() => process.exit(0));
 }
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
 
+// ── Port startup with automatic fallback ─────────────────────────────────────
 const BASE_PORT = Number(process.env.PORT) || 5000;
 
 function startServer(port: number): void {
@@ -86,9 +65,8 @@ function startServer(port: number): void {
       process.exit(1);
     }
   });
-
   httpServer.listen(port, "0.0.0.0", () => {
-    console.log(`[server] Running on http://0.0.0.0:${port}`);
+    console.log(`[server] Running on http://localhost:${port}`);
   });
 }
 

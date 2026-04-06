@@ -1,5 +1,5 @@
 import type { Express, Request, Response, NextFunction } from "express";
-import { createServer, type Server } from "http";
+import { type Server } from "http";
 import { storage } from "./storage.js";
 import { api } from "../shared/routes.js";
 import { z } from "zod";
@@ -39,7 +39,7 @@ const COOKIE_OPTS = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-export async function registerRoutes(httpServer: any, app: Express) {
+export async function registerRoutes(httpServer: Server, app: Express) {
   app.use(cookieParser());
 
   // ── AUTH ─────────────────────────────────────────────────────────────
@@ -60,12 +60,12 @@ export async function registerRoutes(httpServer: any, app: Express) {
       const referralCode = crypto.randomBytes(4).toString("hex").toUpperCase();
 
       const user = await storage.createUser({
-  username: input.username,
-  email: input.email,
-  password: hashedPassword,
-  referralCode,
-  referredBy: input.referredBy ?? undefined,
-});
+        username: input.username,
+        email: input.email,
+        password: hashedPassword,
+        referralCode,
+        referredBy: input.referredBy ?? undefined,
+      });
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
       res.cookie("auth_token", token, COOKIE_OPTS);
@@ -80,16 +80,14 @@ export async function registerRoutes(httpServer: any, app: Express) {
         referralCode: user.referralCode,
       });
     } catch (err) {
-  console.error("REGISTER ERROR:", err);
-
-  if (err instanceof z.ZodError)
-    return res.status(400).json({
-      message: err.errors[0].message,
-      field: err.errors[0].path.join("."),
-    });
-
-  return res.status(500).json({ message: "Internal server error" });
-}
+      console.error("REGISTER ERROR:", err);
+      if (err instanceof z.ZodError)
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join("."),
+        });
+      return res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   app.post(api.auth.login.path, async (req: Request, res: Response) => {
@@ -117,13 +115,11 @@ export async function registerRoutes(httpServer: any, app: Express) {
         referralCode: user.referralCode,
       });
     } catch (err) {
-  console.error("LOGIN ERROR:", err);
-
-  if (err instanceof z.ZodError)
-    return res.status(400).json({ message: err.errors[0].message });
-
-  return res.status(500).json({ message: "Internal server error" });
-}
+      console.error("LOGIN ERROR:", err);
+      if (err instanceof z.ZodError)
+        return res.status(400).json({ message: err.errors[0].message });
+      return res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   app.get(api.auth.me.path, authMiddleware, async (req: Request, res: Response) => {
@@ -156,23 +152,17 @@ export async function registerRoutes(httpServer: any, app: Express) {
 
       const coinsEarned = Math.floor(Math.random() * 6) + 5;
       const updatedUser = await storage.updateUserCoins(userId, coinsEarned);
+
+      // Referral bonus: 10% of coins go to referrer
       const currentUser = await storage.getUser(userId);
-
-if (currentUser?.referredBy) {
-  const referrer = await storage.getUserByReferralCode(currentUser.referredBy);
-
-  if (referrer) {
-    const bonus = Math.floor(coinsEarned * 0.1); // 10%
-
-    await storage.updateUserCoins(referrer.id, bonus);
-
-    await storage.addHistory({
-      userId: referrer.id,
-      coinsEarned: bonus,
-      type: "referral",
-    });
-  }
-}
+      if (currentUser?.referredBy) {
+        const referrer = await storage.getUserByReferralCode(currentUser.referredBy);
+        if (referrer) {
+          const bonus = Math.floor(coinsEarned * 0.1);
+          await storage.updateUserCoins(referrer.id, bonus);
+          await storage.addHistory({ userId: referrer.id, coinsEarned: bonus, type: "referral" });
+        }
+      }
 
       await storage.addHistory({ userId, coinsEarned, type: "ad" });
 
@@ -181,8 +171,49 @@ if (currentUser?.referredBy) {
         coinsEarned,
         newBalance: updatedUser.coins,
       });
-    } catch {
+    } catch (err) {
+      console.error("REWARD ERROR:", err);
       return res.status(500).json({ message: "Failed to process reward" });
+    }
+  });
+
+  // ── MINE ─────────────────────────────────────────────────────────────
+
+  app.post("/api/mine", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUser(req.userId!);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      const now = new Date();
+      if (
+        user.lastMineDate &&
+        now.getTime() - new Date(user.lastMineDate).getTime() < 24 * 60 * 60 * 1000
+      ) {
+        const remaining =
+          24 * 60 * 60 * 1000 - (now.getTime() - new Date(user.lastMineDate).getTime());
+        const hours = Math.floor(remaining / (1000 * 60 * 60));
+        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        return res.status(400).json({ message: `You can mine again in ${hours}h ${minutes}m` });
+      }
+
+      const reward = 10;
+      const updatedUser = await storage.updateMineReward(req.userId!, reward);
+      return res.status(200).json({ message: `You mined ${reward} coins!`, coins: updatedUser.coins });
+    } catch (err) {
+      console.error("MINE ERROR:", err);
+      return res.status(500).json({ message: "Mining failed" });
+    }
+  });
+
+  // ── USERS COUNT ───────────────────────────────────────────────────────
+
+  app.get("/api/users/count", async (_req: Request, res: Response) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      return res.json({ count: allUsers.length });
+    } catch (err) {
+      console.error("USERS COUNT ERROR:", err);
+      return res.status(500).json({ count: 0 });
     }
   });
 
@@ -192,7 +223,8 @@ if (currentUser?.referredBy) {
     try {
       const records = await storage.getHistory(req.userId!);
       return res.status(200).json(records);
-    } catch {
+    } catch (err) {
+      console.error("HISTORY ERROR:", err);
       return res.status(500).json({ message: "Failed to fetch history" });
     }
   });

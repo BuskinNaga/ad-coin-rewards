@@ -1,14 +1,16 @@
 import { db } from "./db.js";
 import { users, history, type InsertUser, type User, type History } from "../shared/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByReferralCode(code: string): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser & { referralCode: string; referredBy?: string }): Promise<User>;
   updateUserCoins(id: number, coinsToAdd: number): Promise<User>;
+  updateMineReward(userId: number, reward: number): Promise<User>;
   addHistory(record: Omit<History, "id" | "date">): Promise<History>;
   getHistory(userId: number): Promise<History[]>;
   checkDailyLimit(userId: number): Promise<boolean>;
@@ -34,11 +36,32 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.referralCode, code));
     return user;
   }
+  async getAllUsers(): Promise<User[]> {
+  return await db.select().from(users);
+  }
 
-  async createUser(insertUser: InsertUser & { referralCode: string; referredBy?: string }): Promise<User> {
+  async createUser(
+    insertUser: InsertUser & { referralCode: string; referredBy?: string }
+  ): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
+
+        async updateMineReward(userId: number, reward: number) {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        coins: sql`${users.coins} + ${reward}`,
+        totalEarned: sql`${users.totalEarned} + ${reward}`,
+        lastMineDate: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return updatedUser;
+  }
+
+
 
   async updateUserCoins(id: number, coinsToAdd: number): Promise<User> {
     const user = await this.getUser(id);

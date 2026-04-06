@@ -1,11 +1,28 @@
+import { useEffect, useState } from "react";
 import { useUser, useLogout } from "@/hooks/use-auth";
 import { useTheme } from "@/components/theme-provider";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
 import {
-  Coins, PlaySquare, Wallet, History, LogOut,
-  TrendingUp, Zap, Sun, Moon, ChevronRight,
-  HelpCircle, FileText, ShieldCheck, Users, Menu,
+  Coins,
+  PlaySquare,
+  Wallet,
+  History,
+  LogOut,
+  TrendingUp,
+  Zap,
+  Sun,
+  Moon,
+  ChevronRight,
+  HelpCircle,
+  FileText,
+  ShieldCheck,
+  Users,
+  Menu,
+  Pickaxe,
+  MessageCircle,
+Send,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -20,22 +37,116 @@ export default function Dashboard() {
   const logout = useLogout();
   const { theme, toggleTheme } = useTheme();
 
+  const [miningTimeLeft, setMiningTimeLeft] = useState(0);
+  const [canMine, setCanMine] = useState(true);
+  const [totalUsers, setTotalUsers] = useState(0);
+
+  useEffect(() => {
+    const updateTimer = () => {
+      const lastMine = localStorage.getItem("lastMineTime");
+
+      if (!lastMine) {
+        setCanMine(true);
+        setMiningTimeLeft(0);
+        return;
+      }
+
+      const nextMine = Number(lastMine) + 24 * 60 * 60 * 1000;
+      const remaining = nextMine - Date.now();
+
+      if (remaining <= 0) {
+        setCanMine(true);
+        setMiningTimeLeft(0);
+      } else {
+        setCanMine(false);
+        setMiningTimeLeft(remaining);
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+  useEffect(() => {
+  const fetchTotalUsers = async () => {
+    try {
+      const res = await fetch("/api/users/count");
+      const data = await res.json();
+      setTotalUsers(data.totalUsers || 0);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchTotalUsers();
+}, []);
+
+  const formatTime = (ms: number) => {
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+
+    return `${hours}h ${minutes}m ${seconds}s`;
+  };
+
+  const handleMine = async () => {
+    if (!canMine) return;
+
+    try {
+      await fetch("/api/mine", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reward: 2 }),
+      });
+
+      localStorage.setItem("lastMineTime", Date.now().toString());
+      setCanMine(false);
+      setMiningTimeLeft(24 * 60 * 60 * 1000);
+
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   if (!user) return null;
 
   const usdtEquivalent = (user.coins / 1000).toFixed(2);
   const progressToWithdraw = Math.min((user.coins / 10000) * 100, 100);
+  const referralLink = `${window.location.origin}/register?ref=${user.referralCode}`;
+
+const shareMessage = `Join CASH FLOW and start mining coins with me! Use my referral link: ${referralLink}`;
+
+const whatsappShare = () => {
+  window.open(
+    `https://wa.me/?text=${encodeURIComponent(shareMessage)}`,
+    "_blank"
+  );
+};
+
+const telegramShare = () => {
+  window.open(
+    `https://t.me/share/url?url=${encodeURIComponent(
+      referralLink
+    )}&text=${encodeURIComponent(
+      "Join CASH FLOW and start mining with me!"
+    )}`,
+    "_blank"
+  );
+};
 
   return (
     <div className="max-w-xl mx-auto p-4 pt-8 md:pt-12">
-      {/* ── Header ── */}
       <header className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-display font-bold">Hello, {user.username} 👋</h1>
+          <h1 className="text-2xl font-display font-bold">Hello, {user.username} ✋‘‹</h1>
           <p className="text-muted-foreground text-sm">Ready to earn some cash?</p>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Theme toggle */}
           <button
             onClick={toggleTheme}
             data-testid="button-theme-toggle"
@@ -45,7 +156,6 @@ export default function Dashboard() {
             {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
 
-          {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -56,6 +166,7 @@ export default function Dashboard() {
                 <Menu className="w-5 h-5" />
               </button>
             </DropdownMenuTrigger>
+
             <DropdownMenuContent align="end" className="w-52">
               <Link href="/faq">
                 <DropdownMenuItem className="cursor-pointer gap-3">
@@ -63,25 +174,30 @@ export default function Dashboard() {
                   FAQs
                 </DropdownMenuItem>
               </Link>
+
               <Link href="/whitepaper">
                 <DropdownMenuItem className="cursor-pointer gap-3">
                   <FileText className="w-4 h-4 text-amber-400" />
                   Whitepaper
                 </DropdownMenuItem>
               </Link>
+
               <Link href="/kyc">
                 <DropdownMenuItem className="cursor-pointer gap-3">
                   <ShieldCheck className="w-4 h-4 text-blue-400" />
                   KYC Verification
                 </DropdownMenuItem>
               </Link>
+
               <Link href="/referral">
                 <DropdownMenuItem className="cursor-pointer gap-3">
                   <Users className="w-4 h-4 text-purple-400" />
                   Referrals
                 </DropdownMenuItem>
               </Link>
+
               <DropdownMenuSeparator />
+
               <DropdownMenuItem
                 className="cursor-pointer gap-3 text-destructive focus:text-destructive"
                 onClick={() => logout.mutate()}
@@ -95,7 +211,6 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* ── Balance card ── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -109,11 +224,13 @@ export default function Dashboard() {
               <Coins className="w-5 h-5" />
               <span className="font-medium">Total Balance</span>
             </div>
+
             <div className="text-5xl md:text-6xl font-display font-bold text-white mb-2">
               {user.coins.toLocaleString()}
             </div>
+
             <div className="inline-block px-3 py-1 bg-black/20 rounded-full text-sm font-medium text-white/90 backdrop-blur-sm">
-              ≈ ${usdtEquivalent} USDT
+              💲ˆ ${usdtEquivalent} USDT
             </div>
           </div>
 
@@ -122,6 +239,7 @@ export default function Dashboard() {
               <span>Withdrawal Goal</span>
               <span>10K Coins</span>
             </div>
+
             <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
@@ -134,66 +252,99 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* ── Stats grid ── */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <div className="glass-card rounded-3xl p-5 flex flex-col items-center justify-center text-center">
-          <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center mb-3 text-primary">
-            <TrendingUp className="w-6 h-6" />
-          </div>
-          <span className="text-2xl font-bold font-display">{user.totalEarned.toLocaleString()}</span>
-          <span className="text-xs text-muted-foreground uppercase tracking-wider mt-1">Total Earned</span>
-        </div>
+      <div className="grid grid-cols-2 gap-4 mb-6">
+  <div className="glass-card rounded-3xl p-4 flex items-center gap-3 border border-primary/10">
+    <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 shrink-0">
+      <Users className="w-6 h-6" />
+    </div>
 
-        <div className="glass-card rounded-3xl p-5 flex flex-col items-center justify-center text-center">
-          <div className="w-12 h-12 bg-accent/20 rounded-2xl flex items-center justify-center mb-3 text-accent">
-            <Zap className="w-6 h-6" />
-          </div>
-          <span className="text-2xl font-bold font-display">
-            {user.dailyAdsWatched} <span className="text-sm text-muted-foreground">/ 50</span>
-          </span>
-          <span className="text-xs text-muted-foreground uppercase tracking-wider mt-1">Ads Today</span>
-        </div>
+    <div>
+      <h4 className="font-semibold text-base">Community</h4>
+      <p className="text-xs text-muted-foreground">
+        {totalUsers.toLocaleString()} users
+      </p>
+    </div>
+  </div>
+
+  <div className="glass-card rounded-3xl p-4 flex items-center justify-between border border-primary/10">
+    <div className="flex items-center gap-3 min-w-0">
+      <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center text-white shrink-0">
+        <Pickaxe className="w-6 h-6" />
       </div>
 
-      {/* ── Quick Actions ── */}
-      <div className="space-y-4">
-        {/* —— Referral Section —— */}
-      <div className="glass-card rounded-3xl p-5 mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-purple-500/20 rounded-2xl flex items-center justify-center text-purple-400">
-            <Users className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-lg">Invite & Earn</h3>
-            <p className="text-sm text-muted-foreground">
-              Earn 10% of your friends' mining rewards
-            </p>
-          </div>
-        </div>
+      <div className="min-w-0">
+        <h4 className="font-semibold text-base truncate">Daily Mining</h4>
+        <p className="text-xs text-muted-foreground truncate">
+          +2 Coins Ready
+        </p>
+      </div>
+    </div>
 
-        <div className="space-y-3">
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-              Your Referral Code
-            </p>
-            <div className="px-4 py-3 rounded-2xl bg-black/20 border border-white/10 font-bold text-lg tracking-widest text-center">
-              {user.referralCode}
+    <Button
+      onClick={handleMine}
+      disabled={!canMine}
+      className="ml-2 shrink-0 rounded-2xl px-4"
+    >
+      {canMine ? "Mine" : "Locked"}
+    </Button>
+  </div>
+</div>
+
+      <div className="space-y-4">
+        <div className="glass-card rounded-3xl p-5 mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-purple-500/20 rounded-2xl flex items-center justify-center text-purple-400">
+              <Users className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg">Invite & Earn</h3>
+              <p className="text-sm text-muted-foreground">
+                Earn 10% of your friends' mining rewards
+              </p>
             </div>
           </div>
 
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-              Your Referral Link
-            </p>
-            <input
-              readOnly
-              value={`${window.location.origin}/register?ref=${user.referralCode}`}
-              className="w-full px-4 py-3 rounded-2xl bg-black/20 border border-white/10 text-sm text-foreground"
-            />
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                Your Referral Code
+              </p>
+              <div className="px-4 py-3 rounded-2xl bg-black/20 border border-white/10 font-bold text-lg tracking-widest text-center">
+                {user.referralCode}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                Your Referral Link
+              </p>
+              <input
+  readOnly
+  value={referralLink}
+  className="w-full px-4 py-3 rounded-2xl bg-black/20 border border-white/10 text-sm text-foreground"
+/>
+              <div className="grid grid-cols-2 gap-3 mt-3">
+  <button
+    onClick={whatsappShare}
+    className="flex items-center justify-center gap-2 rounded-2xl bg-green-600 hover:bg-green-700 text-white py-3 font-semibold transition"
+  >
+    <MessageCircle className="w-5 h-5" />
+    WhatsApp
+  </button>
+
+  <button
+    onClick={telegramShare}
+    className="flex items-center justify-center gap-2 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white py-3 font-semibold transition"
+  >
+    <Send className="w-5 h-5" />
+    Telegram
+  </button>
+</div>
+            </div>
           </div>
         </div>
-      </div>
-        <h3 className="font-display font-semibold text-lg ml-2">Quick Actions</h3>
+
+        <h3 className="font-display font-semibold text-lg ml-2 mb-2 -mt-2">Quick Actions</h3>
 
         <Link href="/watch">
           <div className="glass-card p-4 rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-colors group">
@@ -202,62 +353,11 @@ export default function Dashboard() {
             </div>
             <div className="flex-1">
               <h4 className="font-semibold">Watch & Earn</h4>
-              <p className="text-sm text-muted-foreground mt-0.5">Earn 5–10 coins per ad</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Earn 5â€“10 coins per ad</p>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
           </div>
         </Link>
-
-        <Link href="/withdraw">
-          <div className="glass-card p-4 rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-colors group">
-            <div className="w-14 h-14 bg-secondary rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Wallet className="w-7 h-7" />
-            </div>
-            <div className="flex-1">
-              <h4 className="font-semibold">Withdraw Funds</h4>
-              <p className="text-sm text-muted-foreground mt-0.5">Convert coins to USDT</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-          </div>
-        </Link>
-
-        <Link href="/history">
-          <div className="glass-card p-4 rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-colors group">
-            <div className="w-14 h-14 bg-secondary rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
-              <History className="w-7 h-7" />
-            </div>
-            <div className="flex-1">
-              <h4 className="font-semibold">Earning History</h4>
-              <p className="text-sm text-muted-foreground mt-0.5">View your transactions</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-          </div>
-        </Link>
-
-        {/* ── Secondary links ── */}
-        <div className="pt-2">
-          <h3 className="font-display font-semibold text-base ml-2 mb-3 text-muted-foreground">More</h3>
-          <div className="grid grid-cols-3 gap-3">
-            <Link href="/faq">
-              <div className="glass-card rounded-2xl p-4 flex flex-col items-center gap-2 cursor-pointer hover:bg-white/5 transition-colors text-center" data-testid="link-faq">
-                <HelpCircle className="w-6 h-6 text-primary" />
-                <span className="text-xs font-medium">FAQs</span>
-              </div>
-            </Link>
-            <Link href="/whitepaper">
-              <div className="glass-card rounded-2xl p-4 flex flex-col items-center gap-2 cursor-pointer hover:bg-white/5 transition-colors text-center" data-testid="link-whitepaper">
-                <FileText className="w-6 h-6 text-amber-400" />
-                <span className="text-xs font-medium">Whitepaper</span>
-              </div>
-            </Link>
-            <Link href="/kyc">
-              <div className="glass-card rounded-2xl p-4 flex flex-col items-center gap-2 cursor-pointer hover:bg-white/5 transition-colors text-center" data-testid="link-kyc">
-                <ShieldCheck className="w-6 h-6 text-blue-400" />
-                <span className="text-xs font-medium">KYC</span>
-              </div>
-            </Link>
-          </div>
-        </div>
       </div>
     </div>
   );

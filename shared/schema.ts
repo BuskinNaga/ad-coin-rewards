@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   totalEarned: integer("total_earned").default(0).notNull(),
   dailyAdsWatched: integer("daily_ads_watched").default(0).notNull(),
   lastAdDate: timestamp("last_ad_date"),
+  lastMineDate: timestamp("last_mine_date"),
   referralCode: text("referral_code").notNull().unique(),
   referredBy: text("referred_by"),
 });

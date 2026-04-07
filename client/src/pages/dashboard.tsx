@@ -307,7 +307,7 @@ const telegramShare = () => {
             <div>
               <h3 className="font-semibold text-lg">Invite & Earn</h3>
               <p className="text-sm text-muted-foreground">
-                Earn 10% of your friends' mining rewards
+                Earn 2% of your friends' mining rewards
               </p>
             </div>
           </div>

@@ -3,7 +3,9 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/(.*)",     "destination": "/index.html" }
+    { "source": "/api/mine",         "destination": "/api/mine" },
+    { "source": "/api/users/count",  "destination": "/api/users/count" },
+    { "source": "/api/(.*)",         "destination": "/api/index" },
+    { "source": "/(.*)",             "destination": "/index.html" }
   ]
 }

@@ -2,31 +2,38 @@ import { useState, useEffect } from "react";
 import { useRegister } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Coins, Loader2, UserPlus } from "lucide-react";
+import { Coins, Loader2, UserPlus, Gift } from "lucide-react";
 
 export default function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [referralCode, setReferralCode] = useState("");
-  useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const ref = params.get("ref");
+  const [refFromUrl, setRefFromUrl] = useState(false);
 
-  if (ref) {
-    setReferralCode(ref.toUpperCase());
-  }
-}, []);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) {
+      const code = ref.toUpperCase().trim();
+      setReferralCode(code);
+      setRefFromUrl(true);
+    }
+  }, []);
+
   const register = useRegister();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const code = referralCode.trim().toUpperCase();
     register.mutate({
       username,
       email,
       password,
-      referredBy: referralCode || undefined,
-    });
+      referredBy: code || undefined,
+      // also send as referralCode so backend captures it regardless of field name
+      ...(code ? { referralCode: code } : {}),
+    } as any);
   };
 
   return (
@@ -57,6 +64,12 @@ export default function Register() {
           onSubmit={handleSubmit}
           className="glass-card p-6 md:p-8 rounded-3xl w-full"
         >
+          {refFromUrl && referralCode && (
+            <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-2xl bg-green-500/10 border border-green-500/25 text-green-400 text-sm">
+              <Gift className="w-4 h-4 shrink-0" />
+              <span>Referral code <strong>{referralCode}</strong> applied — you were invited!</span>
+            </div>
+          )}
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5 ml-1">

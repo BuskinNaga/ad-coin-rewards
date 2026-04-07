@@ -59,12 +59,20 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       const hashedPassword = await bcrypt.hash(input.password, 10);
       const referralCode = crypto.randomBytes(4).toString("hex").toUpperCase();
 
+      // Accept referrer's code as either "referralCode" (URL ?ref= convention)
+      // or "referredBy" in the request body — read from raw body so Zod stripping
+      // of the "referralCode" key (which is omitted in insertUserSchema) doesn't lose it
+      const referrerCode: string | undefined =
+        (req.body.referralCode as string | undefined) ??
+        (input.referredBy as string | undefined) ??
+        undefined;
+
       const user = await storage.createUser({
         username: input.username,
         email: input.email,
         password: hashedPassword,
         referralCode,
-        referredBy: input.referredBy ?? undefined,
+        referredBy: referrerCode || undefined,
       });
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
@@ -248,7 +256,7 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         totalEarned,
         referrals: referrals.map((r) => ({
           username: r.username,
-          joinedAt: r.id,
+          joinedAt: r.id, // sequential ID used as join order proxy
         })),
       });
     } catch (err) {

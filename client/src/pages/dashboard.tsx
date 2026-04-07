@@ -32,11 +32,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const { data: user } = useUser();
   const logout = useLogout();
   const { theme, toggleTheme } = useTheme();
+  const { toast } = useToast();
 
   const [miningTimeLeft, setMiningTimeLeft] = useState(0);
   const [canMine, setCanMine] = useState(true);
@@ -100,19 +102,34 @@ export default function Dashboard() {
         credentials: "include",
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
-        console.error("Mine error:", data.message);
+        toast({
+          title: "Mining failed",
+          description: data.message || "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
         return;
       }
+
+      toast({
+        title: "Mining successful!",
+        description: `You earned 20 coins. Come back in 24 hours to mine again.`,
+      });
 
       localStorage.setItem("lastMineTime", Date.now().toString());
       setCanMine(false);
       setMiningTimeLeft(24 * 60 * 60 * 1000);
 
-      window.location.reload();
+      setTimeout(() => window.location.reload(), 1500);
     } catch (error) {
       console.error(error);
+      toast({
+        title: "Mining failed",
+        description: "Network error. Please check your connection and try again.",
+        variant: "destructive",
+      });
     }
   };
 

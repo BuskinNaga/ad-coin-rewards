@@ -11,6 +11,7 @@ export interface IStorage {
   getReferralsByCode(referralCode: string): Promise<User[]>;
   createUser(user: InsertUser & { referralCode: string; referredBy?: string }): Promise<User>;
   updateUserCoins(id: number, coinsToAdd: number): Promise<User>;
+  addReferralBonus(id: number, coinsToAdd: number): Promise<User>;
   updateMineReward(userId: number, reward: number): Promise<User>;
   addHistory(record: Omit<History, "id" | "date">): Promise<History>;
   getHistory(userId: number): Promise<History[]>;

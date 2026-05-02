@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes.js";
+import { applyRlsPolicies } from "./db.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,6 +15,9 @@ const httpServer = createServer(app);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Apply RLS policies before any route is registered
+await applyRlsPolicies();
 
 // Register all API routes before the frontend middleware
 await registerRoutes(httpServer, app);

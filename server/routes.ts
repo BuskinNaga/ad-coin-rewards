@@ -103,7 +103,10 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     try {
       const { username, password } = api.auth.login.input.parse(req.body);
 
-      const user = await storage.getUserByUsername(username);
+      // Accept either username or email in the username field
+      const user =
+        (await storage.getUserByUsername(username)) ??
+        (await storage.getUserByEmail(username));
       if (!user)
         return res.status(401).json({ message: "Invalid username or password" });
 

@@ -37,14 +37,14 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="glass-card p-6 md:p-8 rounded-3xl w-full">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5 ml-1">Username</label>
+              <label className="block text-sm font-medium text-foreground mb-1.5 ml-1">Username or Email</label>
               <input
                 type="text"
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3.5 rounded-2xl bg-black/20 border border-white/5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
-                placeholder="Enter your username"
+                placeholder="Enter your username or email"
               />
             </div>
             

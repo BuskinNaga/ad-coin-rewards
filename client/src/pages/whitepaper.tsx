@@ -18,7 +18,7 @@ const sections = [
     icon: TrendingUp,
     color: "text-emerald-400 bg-emerald-400/10",
     title: "The Reward System",
-    body: "Users earn 5 to 10 coins per ad watched, with a maximum of 50 ads per day. Coins accumulate in the user's balance and can be redeemed for real value. The conversion rate is fixed at 1000 coins = 1 USDT, giving users a transparent and predictable earning potential of up to 0.5 USDT per day.",
+    body: "Users earn 5 to 10 coins per ad watched, with a maximum of 20 ads per day. The daily counter resets automatically at 12:00 AM (midnight). Coins accumulate in the user's balance and can be redeemed for real value. The conversion rate is fixed at 1000 coins = 1 USDT, giving users a transparent and predictable earning potential of up to 0.2 USDT per day.",
   },
   {
     icon: Shield,
@@ -30,7 +30,7 @@ const sections = [
     icon: Users,
     color: "text-purple-400 bg-purple-400/10",
     title: "Referral & Community Growth",
-    body: "CashFlow grows through word of mouth. Users who refer friends will earn bonus coins when those friends watch their first ads. This referral reward system creates a thriving community of earners who are incentivised to grow the platform together.",
+    body: "CashFlow grows through word of mouth. The referral system is live — users can already share their unique referral link and earn bonus coins when new users sign up successfully using their code. A 2% lifetime commission is awarded on every coin earned by referred users. This referral reward system creates a thriving community of earners who are incentivised to grow the platform together.",
   },
   {
     icon: Globe,

@@ -13,7 +13,7 @@ const faqs = [
   },
   {
     q: "What is the daily limit?",
-    a: "You can watch up to 50 ads per day. The counter resets every day at midnight. When you reach 50/50 the Start Video button becomes disabled and will show 'Daily limit reached — Come back tomorrow!'",
+    a: "You can watch up to 20 ads per day. The counter resets automatically every day at 12:00 AM (midnight). When you reach 20/20 the Start Video button becomes disabled and will show 'Daily limit reached — Come back tomorrow!'",
   },
   {
     q: "How can I withdraw coins?",
@@ -25,7 +25,7 @@ const faqs = [
   },
   {
     q: "How does the Referral program work?",
-    a: "The Referral program is currently under development. Soon you will be able to share your unique referral link and earn bonus coins every time a friend signs up and watches their first ad.",
+    a: "The Referral program is live and working. You can share your unique referral link and earn bonus coins when a friend signs up successfully using your referral code. Referral tracking is active on the production app — visit the Referrals page to copy your link, see how many friends you have invited, and track your total referral earnings.",
   },
   {
     q: "What is KYC and why is it required?",

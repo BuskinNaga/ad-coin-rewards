@@ -28,6 +28,11 @@ export default function ReferralPage() {
   const { data: referralData, isLoading } = useQuery<ReferralData>({
     queryKey: ["/api/referrals"],
     enabled: !!user,
+    queryFn: async () => {
+      const res = await fetch("/api/referrals", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch referrals");
+      return res.json();
+    },
   });
 
   const referralLink = user

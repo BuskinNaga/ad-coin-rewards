@@ -1,6 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-const BASE_URL = "https://0c0255b0-0179-4582-8346-503e3306424b-00-z6vy6x934mov.kirk.replit.dev";
+const BASE_URL = "";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {

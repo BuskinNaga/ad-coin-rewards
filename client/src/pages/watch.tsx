@@ -7,7 +7,7 @@ import confetti from "canvas-confetti";
 
 const MONETAG_DIRECT_LINK = "https://omg10.com/4/10632799";
 const WATCH_DURATION = 15;
-const DAILY_LIMIT = 50;
+const DAILY_LIMIT = 20;
 
 type Status = "idle" | "watching" | "rewarding" | "success" | "error";
 
@@ -20,7 +20,12 @@ export default function WatchPage() {
   const [earned, setEarned] = useState(0);
   const rewardCalledRef = useRef(false);
 
-  const adsWatched = user?.dailyAdsWatched ?? 0;
+  // Determine if lastAdDate is from a previous day so the limit resets at midnight
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const lastAdDate = user?.lastAdDate ? new Date(user.lastAdDate) : null;
+  const isNewDay = !lastAdDate || lastAdDate < todayStart;
+  const adsWatched = isNewDay ? 0 : (user?.dailyAdsWatched ?? 0);
   const limitReached = adsWatched >= DAILY_LIMIT;
 
   // 15-second countdown — only runs during "watching" state

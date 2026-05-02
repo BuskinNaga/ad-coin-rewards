@@ -2,6 +2,8 @@ import { db } from "./db.js";
 import { users, history, type InsertUser, type User, type History } from "../shared/schema.js";
 import { eq, sql } from "drizzle-orm";
 
+const DAILY_AD_LIMIT = 20;
+
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -38,6 +40,7 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.referralCode, code));
     return user;
   }
+
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users);
   }
@@ -53,7 +56,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-        async updateMineReward(userId: number, reward: number) {
+  async updateMineReward(userId: number, reward: number): Promise<User> {
     const [updatedUser] = await db
       .update(users)
       .set({
@@ -63,11 +66,8 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(users.id, userId))
       .returning();
-
     return updatedUser;
   }
-
-
 
   async updateUserCoins(id: number, coinsToAdd: number): Promise<User> {
     const user = await this.getUser(id);
@@ -93,6 +93,19 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  // Used only for referral bonuses — does NOT touch ad-tracking fields
+  async addReferralBonus(id: number, coinsToAdd: number): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({
+        coins: sql`${users.coins} + ${coinsToAdd}`,
+        totalEarned: sql`${users.totalEarned} + ${coinsToAdd}`,
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return updated;
+  }
+
   async addHistory(record: Omit<History, "id" | "date">): Promise<History> {
     const [newHistory] = await db.insert(history).values(record).returning();
     return newHistory;
@@ -114,10 +127,10 @@ export class DatabaseStorage implements IStorage {
     today.setHours(0, 0, 0, 0);
 
     if (user.lastAdDate && user.lastAdDate >= today) {
-      return user.dailyAdsWatched < 50;
+      return user.dailyAdsWatched < DAILY_AD_LIMIT;
     }
 
-    return true;
+    return true; // New day — limit resets
   }
 }
 

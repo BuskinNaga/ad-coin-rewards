@@ -86,6 +86,7 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         totalEarned: user.totalEarned,
         dailyAdsWatched: user.dailyAdsWatched,
         referralCode: user.referralCode,
+        lastAdDate: user.lastAdDate ?? null,
       });
     } catch (err) {
       console.error("REGISTER ERROR:", err);
@@ -121,6 +122,7 @@ export async function registerRoutes(httpServer: Server, app: Express) {
         totalEarned: user.totalEarned,
         dailyAdsWatched: user.dailyAdsWatched,
         referralCode: user.referralCode,
+        lastAdDate: user.lastAdDate ?? null,
       });
     } catch (err) {
       console.error("LOGIN ERROR:", err);
@@ -141,6 +143,7 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       totalEarned: user.totalEarned,
       dailyAdsWatched: user.dailyAdsWatched,
       referralCode: user.referralCode,
+      lastAdDate: user.lastAdDate ?? null,
     });
   });
 
@@ -161,13 +164,13 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       const coinsEarned = Math.floor(Math.random() * 6) + 5;
       const updatedUser = await storage.updateUserCoins(userId, coinsEarned);
 
-      // Referral bonus: 2% lifetime commission to referrer
+      // Referral bonus: 2% lifetime commission to referrer (coins only, no ad tracking)
       const currentUser = await storage.getUser(userId);
       if (currentUser?.referredBy) {
         const referrer = await storage.getUserByReferralCode(currentUser.referredBy);
         if (referrer) {
           const bonus = Math.max(1, Math.floor(coinsEarned * 0.02));
-          await storage.updateUserCoins(referrer.id, bonus);
+          await storage.addReferralBonus(referrer.id, bonus);
           await storage.addHistory({ userId: referrer.id, coinsEarned: bonus, type: "referral" });
         }
       }
@@ -207,12 +210,12 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       const reward = 20;
       const updatedUser = await storage.updateMineReward(req.userId!, reward);
 
-      // Referral bonus: 2% lifetime commission to referrer on mining too
+      // Referral bonus: 2% lifetime commission to referrer on mining (coins only, no ad tracking)
       if (user.referredBy) {
         const referrer = await storage.getUserByReferralCode(user.referredBy);
         if (referrer) {
           const bonus = Math.max(1, Math.floor(reward * 0.02));
-          await storage.updateUserCoins(referrer.id, bonus);
+          await storage.addReferralBonus(referrer.id, bonus);
           await storage.addHistory({ userId: referrer.id, coinsEarned: bonus, type: "referral" });
         }
       }

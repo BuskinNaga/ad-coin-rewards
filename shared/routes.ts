@@ -15,7 +15,8 @@ export const userResponseSchema = z.object({
   coins: z.number(),
   totalEarned: z.number(),
   dailyAdsWatched: z.number(),
-  referralCode: z.string()
+  referralCode: z.string(),
+  lastAdDate: z.string().nullable().optional(),
 });
 
 export const api = {

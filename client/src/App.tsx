@@ -16,6 +16,7 @@ import ReferralPage from "./pages/referral";
 import FAQPage from "./pages/faq";
 import WhitepaperPage from "./pages/whitepaper";
 import KYCPage from "./pages/kyc";
+import MarketPage from "./pages/market";
 import { AuthGuard } from "./components/layout/auth-guard";
 
 function Router() {
@@ -47,6 +48,9 @@ function Router() {
       </Route>
       <Route path="/kyc">
         <AuthGuard><KYCPage /></AuthGuard>
+      </Route>
+      <Route path="/market">
+        <AuthGuard><MarketPage /></AuthGuard>
       </Route>
 
       <Route component={NotFound} />

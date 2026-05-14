@@ -24,6 +24,7 @@ import {
   MessageCircle,
   Send,
   Clock,
+  ShoppingCart,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -214,6 +215,14 @@ const telegramShare = () => {
                 <DropdownMenuItem className="cursor-pointer gap-3">
                   <Users className="w-4 h-4 text-purple-400" />
                   Referrals
+                </DropdownMenuItem>
+              </Link>
+
+              <Link href="/market">
+                <DropdownMenuItem className="cursor-pointer gap-3">
+                  <ShoppingCart className="w-4 h-4 text-amber-400" />
+                  Coin Market
+                  <span className="ml-auto text-[9px] font-bold uppercase tracking-widest bg-amber-500/15 text-amber-400 border border-amber-400/20 rounded-full px-1.5 py-0.5">Soon</span>
                 </DropdownMenuItem>
               </Link>
 

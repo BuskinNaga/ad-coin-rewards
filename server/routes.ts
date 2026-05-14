@@ -283,5 +283,62 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  // ── MARKET (future-ready, not yet activated) ──────────────────────────
+
+  // GET /api/market/info — exchange rate + feature flags
+  app.get("/api/market/info", authMiddleware, async (_req: Request, res: Response) => {
+    return res.json({
+      exchangeRate: 1000,          // 1000 coins = 1 USDT
+      minCoins: 500,
+      maxCoins: 100000,
+      supportedMethods: ["upi", "bank_transfer"],
+      features: {
+        directBuy: false,          // not yet live
+        directSell: false,
+        p2p: false,
+      },
+      message: "Coin marketplace coming soon. Database and infrastructure are ready.",
+    });
+  });
+
+  // GET /api/market/orders — list open P2P orders (future)
+  app.get("/api/market/orders", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const type = req.query.type as "buy" | "sell" | undefined;
+      const orders = await storage.getCoinOrders(type);
+      return res.json(orders);
+    } catch (err) {
+      console.error("MARKET ORDERS ERROR:", err);
+      return res.status(500).json({ message: "Failed to fetch orders" });
+    }
+  });
+
+  // POST /api/market/orders — create P2P order (future — returns 503 until activated)
+  app.post("/api/market/orders", authMiddleware, async (_req: Request, res: Response) => {
+    return res.status(503).json({
+      message: "P2P trading is coming soon. Your account is ready.",
+      comingSoon: true,
+    });
+  });
+
+  // GET /api/market/transactions — user's coin purchase history
+  app.get("/api/market/transactions", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const txs = await storage.getCoinTransactions(req.userId!);
+      return res.json(txs);
+    } catch (err) {
+      console.error("MARKET TXS ERROR:", err);
+      return res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
+
+  // POST /api/market/buy — direct coin purchase (future — returns 503 until activated)
+  app.post("/api/market/buy", authMiddleware, async (_req: Request, res: Response) => {
+    return res.status(503).json({
+      message: "Direct coin purchase is coming soon.",
+      comingSoon: true,
+    });
+  });
+
   return httpServer;
 }

@@ -1,6 +1,11 @@
 import { db } from "./db.js";
-import { users, history, type InsertUser, type User, type History } from "../shared/schema.js";
-import { eq, sql } from "drizzle-orm";
+import {
+  users, history, coinOrders, coinTransactions,
+  type InsertUser, type User, type History,
+  type CoinOrder, type CoinTransaction,
+  type InsertCoinOrder, type InsertCoinTransaction,
+} from "../shared/schema.js";
+import { eq, sql, and, desc } from "drizzle-orm";
 
 const DAILY_AD_LIMIT = 20;
 
@@ -18,6 +23,15 @@ export interface IStorage {
   addHistory(record: Omit<History, "id" | "date">): Promise<History>;
   getHistory(userId: number): Promise<History[]>;
   checkDailyLimit(userId: number): Promise<boolean>;
+  // ── Market ─────────────────────────────────────────────────────────
+  createCoinOrder(order: InsertCoinOrder): Promise<CoinOrder>;
+  getCoinOrders(type?: "buy" | "sell"): Promise<CoinOrder[]>;
+  getCoinOrderById(id: number): Promise<CoinOrder | undefined>;
+  updateCoinOrderStatus(id: number, status: string, adminNote?: string): Promise<CoinOrder>;
+  getUserCoinOrders(userId: number): Promise<CoinOrder[]>;
+  createCoinTransaction(tx: InsertCoinTransaction): Promise<CoinTransaction>;
+  getCoinTransactions(userId: number): Promise<CoinTransaction[]>;
+  updateTransactionStatus(id: number, status: string, adminNote?: string): Promise<CoinTransaction>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -131,6 +145,62 @@ export class DatabaseStorage implements IStorage {
     }
 
     return true; // New day — limit resets
+  }
+
+  // ── Market methods ───────────────────────────────────────────────────
+
+  async createCoinOrder(order: InsertCoinOrder): Promise<CoinOrder> {
+    const [row] = await db.insert(coinOrders).values(order).returning();
+    return row;
+  }
+
+  async getCoinOrders(type?: "buy" | "sell"): Promise<CoinOrder[]> {
+    if (type) {
+      return db.select().from(coinOrders)
+        .where(and(eq(coinOrders.type, type), eq(coinOrders.isActive, true)))
+        .orderBy(desc(coinOrders.createdAt));
+    }
+    return db.select().from(coinOrders)
+      .where(eq(coinOrders.isActive, true))
+      .orderBy(desc(coinOrders.createdAt));
+  }
+
+  async getCoinOrderById(id: number): Promise<CoinOrder | undefined> {
+    const [row] = await db.select().from(coinOrders).where(eq(coinOrders.id, id));
+    return row;
+  }
+
+  async updateCoinOrderStatus(id: number, status: string, adminNote?: string): Promise<CoinOrder> {
+    const [row] = await db.update(coinOrders)
+      .set({ status, ...(adminNote ? { adminNote } : {}), isActive: status === "open" })
+      .where(eq(coinOrders.id, id))
+      .returning();
+    return row;
+  }
+
+  async getUserCoinOrders(userId: number): Promise<CoinOrder[]> {
+    return db.select().from(coinOrders)
+      .where(eq(coinOrders.userId, userId))
+      .orderBy(desc(coinOrders.createdAt));
+  }
+
+  async createCoinTransaction(tx: InsertCoinTransaction): Promise<CoinTransaction> {
+    const [row] = await db.insert(coinTransactions).values(tx).returning();
+    return row;
+  }
+
+  async getCoinTransactions(userId: number): Promise<CoinTransaction[]> {
+    return db.select().from(coinTransactions)
+      .where(eq(coinTransactions.buyerId, userId))
+      .orderBy(desc(coinTransactions.createdAt));
+  }
+
+  async updateTransactionStatus(id: number, status: string, adminNote?: string): Promise<CoinTransaction> {
+    const [row] = await db.update(coinTransactions)
+      .set({ status, ...(adminNote ? { adminNote } : {}) })
+      .where(eq(coinTransactions.id, id))
+      .returning();
+    return row;
   }
 }
 

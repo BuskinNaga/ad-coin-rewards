@@ -17,6 +17,7 @@ export const userResponseSchema = z.object({
   lastName:    z.string().nullable().optional(),
   displayName: z.string().nullable().optional(),
   phone:       z.string().nullable().optional(),
+  avatarUrl:   z.string().nullable().optional(),
   // ── Balances & tracking ─────────────────────────
   coins: z.number(),
   totalEarned: z.number(),

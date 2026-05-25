@@ -19,14 +19,16 @@ import {
   FileText,
   ShieldCheck,
   Users,
-  Menu,
   Pickaxe,
   MessageCircle,
   Send,
   Clock,
   ShoppingCart,
   UserCircle,
+  Download,
 } from "lucide-react";
+import { UserAvatar } from "@/components/user-avatar";
+import { usePWAInstall } from "@/hooks/use-pwa-install";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,6 +43,7 @@ export default function Dashboard() {
   const logout = useLogout();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
+  const { isInstallable, isInstalled, promptInstall } = usePWAInstall();
 
   const [miningTimeLeft, setMiningTimeLeft] = useState(0);
   const [canMine, setCanMine] = useState(true);
@@ -183,10 +186,10 @@ const telegramShare = () => {
             <DropdownMenuTrigger asChild>
               <button
                 data-testid="button-user-menu"
-                className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
+                className="rounded-full hover:ring-2 hover:ring-primary/40 hover:ring-offset-2 hover:ring-offset-background transition-all"
                 aria-label="Open menu"
               >
-                <Menu className="w-5 h-5" />
+                <UserAvatar user={user} size="md" />
               </button>
             </DropdownMenuTrigger>
 
@@ -235,6 +238,24 @@ const telegramShare = () => {
                   <span className="ml-auto text-[9px] font-bold uppercase tracking-widest bg-amber-500/15 text-amber-400 border border-amber-400/20 rounded-full px-1.5 py-0.5">Soon</span>
                 </DropdownMenuItem>
               </Link>
+
+              {(isInstallable || isInstalled) && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer gap-3"
+                    onClick={isInstallable ? promptInstall : undefined}
+                    data-testid="menu-install-app"
+                  >
+                    <Download className="w-4 h-4 text-primary" />
+                    {isInstalled ? (
+                      <span className="text-emerald-400">App Installed ✓</span>
+                    ) : (
+                      "Download App"
+                    )}
+                  </DropdownMenuItem>
+                </>
+              )}
 
               <DropdownMenuSeparator />
 

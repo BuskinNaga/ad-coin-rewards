@@ -279,6 +279,31 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  // ── PROFILE AVATAR ────────────────────────────────────────────────────
+
+  app.patch("/api/profile/avatar", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { avatarUrl } = req.body;
+      if (typeof avatarUrl !== "string") {
+        return res.status(400).json({ message: "Invalid avatar data" });
+      }
+      // Must be a base64 JPEG/PNG data URL
+      if (!/^data:image\/(jpeg|png|webp);base64,/.test(avatarUrl)) {
+        return res.status(400).json({ message: "Avatar must be a base64-encoded image" });
+      }
+      // Enforce ~200 KB limit on the base64 string (approx 150 KB decoded)
+      if (avatarUrl.length > 280_000) {
+        return res.status(400).json({ message: "Image too large. Please upload a smaller image." });
+      }
+      const updated = await storage.updateUserAvatar(req.userId!, avatarUrl);
+      const { password: _, ...safe } = updated;
+      return res.json(safe);
+    } catch (err) {
+      console.error("AVATAR UPDATE ERROR:", err);
+      return res.status(500).json({ message: "Failed to update avatar" });
+    }
+  });
+
   // ── USERS COUNT ───────────────────────────────────────────────────────
 
   app.get("/api/users/count", async (_req: Request, res: Response) => {

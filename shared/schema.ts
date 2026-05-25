@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   lastName: text("last_name"),
   displayName: text("display_name"),
   phone: text("phone"),
+  avatarUrl: text("avatar_url"),
   // ── Coin balances ─────────────────────────────────────────────────────
   coins: integer("coins").default(0).notNull(),
   totalEarned: integer("total_earned").default(0).notNull(),

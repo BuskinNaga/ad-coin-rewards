@@ -25,6 +25,7 @@ export interface IStorage {
   getHistory(userId: number): Promise<History[]>;
   checkDailyLimit(userId: number): Promise<boolean>;
   updateUserProfile(id: number, data: UpdateProfile): Promise<User>;
+  updateUserAvatar(id: number, avatarUrl: string): Promise<User>;
   // ── Market ─────────────────────────────────────────────────────────
   createCoinOrder(order: InsertCoinOrder): Promise<CoinOrder>;
   getCoinOrders(type?: "buy" | "sell"): Promise<CoinOrder[]>;
@@ -147,6 +148,15 @@ export class DatabaseStorage implements IStorage {
     }
 
     return true; // New day — limit resets
+  }
+
+  async updateUserAvatar(id: number, avatarUrl: string): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({ avatarUrl })
+      .where(eq(users.id, id))
+      .returning();
+    return updated;
   }
 
   async updateUserProfile(id: number, data: UpdateProfile): Promise<User> {

@@ -19,6 +19,7 @@ import KYCPage from "./pages/kyc";
 import MarketPage from "./pages/market";
 import ProfilePage from "./pages/profile";
 import { AuthGuard } from "./components/layout/auth-guard";
+import { PWAInstallBanner } from "./components/pwa-install-banner";
 
 function Router() {
   return (
@@ -68,6 +69,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Router />
+          <PWAInstallBanner />
           <Toaster />
         </TooltipProvider>
       </QueryClientProvider>

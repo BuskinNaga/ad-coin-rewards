@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -22,6 +22,8 @@ import {
   Camera,
   Eye,
   EyeOff,
+  Upload,
+  X,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-auth";
 import { api } from "@shared/routes";
@@ -37,6 +39,7 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { UserAvatar, compressAvatar } from "@/components/user-avatar";
 
 // ── Schemas ────────────────────────────────────────────────────────────────
 
@@ -58,28 +61,6 @@ const privateSchema = z.object({
 
 type PublicForm  = z.infer<typeof publicSchema>;
 type PrivateForm = z.infer<typeof privateSchema>;
-
-// ── Avatar component ────────────────────────────────────────────────────────
-
-function Avatar({ name, size = "lg" }: { name: string; size?: "sm" | "lg" }) {
-  const initials = name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase() || "?";
-
-  const cls = size === "lg" ? "w-24 h-24 text-3xl" : "w-10 h-10 text-sm";
-
-  return (
-    <div className={`${cls} relative rounded-full bg-gradient-to-br from-primary to-emerald-700 flex items-center justify-center text-white font-bold shadow-xl shadow-primary/30 shrink-0`}>
-      {initials}
-      <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-secondary border-2 border-background flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors group">
-        <Camera className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
-      </div>
-    </div>
-  );
-}
 
 // ── Success banner ──────────────────────────────────────────────────────────
 
@@ -131,10 +112,14 @@ export default function ProfilePage() {
   const { data: user, isLoading } = useUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [publicSaved, setPublicSaved]   = useState(false);
   const [privateSaved, setPrivateSaved] = useState(false);
   const [showEmail, setShowEmail]       = useState(false);
   const [showPhone, setShowPhone]       = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarSaved, setAvatarSaved]     = useState(false);
 
   // ── Forms ──────────────────────────────────────────────────────────────
 
@@ -148,7 +133,6 @@ export default function ProfilePage() {
     defaultValues: { firstName: "", lastName: "", email: "", phone: "" },
   });
 
-  // Populate forms when user loads
   useEffect(() => {
     if (!user) return;
     publicForm.reset({
@@ -161,9 +145,9 @@ export default function ProfilePage() {
       email:     user.email     ?? "",
       phone:     user.phone     ?? "",
     });
-  }, [user]);  // eslint-disable-line
+  }, [user]); // eslint-disable-line
 
-  // ── Shared save logic ──────────────────────────────────────────────────
+  // ── Cache helpers ──────────────────────────────────────────────────────
 
   const buildPayload = (overrides: Partial<PublicForm & PrivateForm>) => ({
     username:    publicForm.getValues("username"),
@@ -182,6 +166,45 @@ export default function ProfilePage() {
     );
   };
 
+  // ── Avatar mutation ────────────────────────────────────────────────────
+
+  const avatarMutation = useMutation({
+    mutationFn: async (dataUrl: string) => {
+      const res = await apiRequest("PATCH", "/api/profile/avatar", { avatarUrl: dataUrl });
+      return res.json();
+    },
+    onSuccess: (updated) => {
+      applyToCache({ avatarUrl: updated.avatarUrl });
+      setAvatarPreview(null);
+      setAvatarSaved(true);
+      setTimeout(() => setAvatarSaved(false), 4000);
+      toast({ title: "Profile picture updated!", description: "Your new photo is live across the app." });
+    },
+    onError: async (err: any) => {
+      let msg = "Failed to upload photo. Please try again.";
+      try { const b = await err?.response?.json?.(); if (b?.message) msg = b.message; } catch {}
+      toast({ title: "Upload failed", description: msg, variant: "destructive" });
+    },
+  });
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    try {
+      const compressed = await compressAvatar(file);
+      setAvatarPreview(compressed);
+    } catch (err: any) {
+      toast({ title: "Image error", description: err.message || "Could not process image.", variant: "destructive" });
+    }
+  };
+
+  const handleAvatarSave = () => {
+    if (avatarPreview) avatarMutation.mutate(avatarPreview);
+  };
+
+  const handleAvatarCancel = () => setAvatarPreview(null);
+
   // ── Public profile mutation ────────────────────────────────────────────
 
   const publicMutation = useMutation({
@@ -191,11 +214,7 @@ export default function ProfilePage() {
       return res.json();
     },
     onSuccess: (updated) => {
-      // Instant cache update — no page refresh needed
-      applyToCache({
-        username:    updated.username,
-        displayName: updated.displayName,
-      });
+      applyToCache({ username: updated.username, displayName: updated.displayName });
       publicForm.reset({
         username:    updated.username    ?? "",
         displayName: updated.displayName ?? "",
@@ -260,6 +279,8 @@ export default function ProfilePage() {
   const usdtValue      = (user.coins / 1000).toFixed(2);
   const totalUsdtValue = (user.totalEarned / 1000).toFixed(2);
 
+  const previewUser = { ...user, avatarUrl: avatarPreview ?? user.avatarUrl };
+
   // ── Render ─────────────────────────────────────────────────────────────
 
   return (
@@ -285,25 +306,128 @@ export default function ProfilePage() {
       <motion.div
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-card rounded-3xl p-5 mb-5 flex items-center gap-5"
+        className="glass-card rounded-3xl p-5 mb-5"
       >
-        <Avatar name={displayLabel} />
-        <div className="flex-1 min-w-0">
-          <p
-            className="font-display font-bold text-xl leading-tight truncate"
-            data-testid="text-display-name"
-          >
-            {displayLabel}
-          </p>
-          <p className="text-sm text-muted-foreground truncate" data-testid="text-username">
-            @{user.username}
-          </p>
-          {user.firstName && user.lastName && (
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">
-              {user.firstName} {user.lastName}
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          data-testid="input-avatar-file"
+          onChange={handleFileChange}
+        />
+
+        <div className="flex items-center gap-5">
+          {/* Clickable avatar */}
+          <div className="relative shrink-0">
+            <UserAvatar user={previewUser} size="xl" ring />
+
+            {/* Preview badge */}
+            {avatarPreview && (
+              <div className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-amber-400 border-2 border-background flex items-center justify-center">
+                <span className="text-[8px] font-bold text-black">!</span>
+              </div>
+            )}
+
+            {/* Camera button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              data-testid="button-change-avatar"
+              disabled={avatarMutation.isPending}
+              className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary border-2 border-background flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-all shadow-lg shadow-primary/30"
+              aria-label="Change profile picture"
+            >
+              <Camera className="w-3.5 h-3.5 text-white" />
+            </button>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <p
+              className="font-display font-bold text-xl leading-tight truncate"
+              data-testid="text-display-name"
+            >
+              {displayLabel}
             </p>
-          )}
+            <p className="text-sm text-muted-foreground truncate" data-testid="text-username">
+              @{user.username}
+            </p>
+            {user.firstName && user.lastName && (
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                {user.firstName} {user.lastName}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="mt-2 text-[11px] text-primary hover:text-primary/80 transition-colors font-medium"
+            >
+              Change photo
+            </button>
+          </div>
         </div>
+
+        {/* Preview panel — shown when user picks a new image */}
+        <AnimatePresence>
+          {avatarPreview && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, marginTop: 0 }}
+              animate={{ opacity: 1, height: "auto", marginTop: 16 }}
+              exit={{ opacity: 0, height: 0, marginTop: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="border border-amber-400/25 bg-amber-400/5 rounded-2xl p-3.5 flex items-center gap-3">
+                <img
+                  src={avatarPreview}
+                  alt="Preview"
+                  className="w-12 h-12 rounded-full object-cover shrink-0 ring-2 ring-amber-400/30"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-amber-400">Preview — not saved yet</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Tap Save Photo to apply your new profile picture.</p>
+                </div>
+                <div className="flex flex-col gap-1.5 shrink-0">
+                  <Button
+                    size="sm"
+                    onClick={handleAvatarSave}
+                    disabled={avatarMutation.isPending}
+                    data-testid="button-save-avatar"
+                    className="h-7 px-3 text-xs rounded-xl"
+                  >
+                    {avatarMutation.isPending ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <>
+                        <Upload className="w-3 h-3 mr-1" /> Save
+                      </>
+                    )}
+                  </Button>
+                  <button
+                    onClick={handleAvatarCancel}
+                    data-testid="button-cancel-avatar"
+                    className="h-7 px-3 text-xs rounded-xl bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1"
+                  >
+                    <X className="w-3 h-3" /> Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Avatar saved confirmation */}
+        <AnimatePresence>
+          {avatarSaved && !avatarPreview && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, marginTop: 0 }}
+              animate={{ opacity: 1, height: "auto", marginTop: 12 }}
+              exit={{ opacity: 0, height: 0, marginTop: 0 }}
+            >
+              <SuccessBanner message="Profile picture updated! Visible across the entire app." />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* ── Stats ──────────────────────────────────────────────────────── */}

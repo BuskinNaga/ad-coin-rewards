@@ -7,6 +7,12 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  // ── Profile fields (editable by user) ────────────────────────────────
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  displayName: text("display_name"),
+  phone: text("phone"),
+  // ── Coin balances ─────────────────────────────────────────────────────
   coins: integer("coins").default(0).notNull(),
   totalEarned: integer("total_earned").default(0).notNull(),
   dailyAdsWatched: integer("daily_ads_watched").default(0).notNull(),
@@ -64,6 +70,17 @@ export const insertUserSchema = createInsertSchema(users).omit({
   lastAdDate: true, 
   referralCode: true 
 });
+
+export const updateProfileSchema = z.object({
+  firstName:   z.string().max(50).optional(),
+  lastName:    z.string().max(50).optional(),
+  displayName: z.string().max(60).optional(),
+  phone:       z.string().max(20).optional(),
+  username:    z.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers, underscores"),
+  email:       z.string().email("Invalid email address"),
+});
+
+export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 
 export const insertCoinOrderSchema = createInsertSchema(coinOrders).omit({
   id: true, createdAt: true, status: true, isActive: true, adminNote: true,

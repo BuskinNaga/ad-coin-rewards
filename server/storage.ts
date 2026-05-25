@@ -4,6 +4,7 @@ import {
   type InsertUser, type User, type History,
   type CoinOrder, type CoinTransaction,
   type InsertCoinOrder, type InsertCoinTransaction,
+  type UpdateProfile,
 } from "../shared/schema.js";
 import { eq, sql, and, desc } from "drizzle-orm";
 
@@ -23,6 +24,7 @@ export interface IStorage {
   addHistory(record: Omit<History, "id" | "date">): Promise<History>;
   getHistory(userId: number): Promise<History[]>;
   checkDailyLimit(userId: number): Promise<boolean>;
+  updateUserProfile(id: number, data: UpdateProfile): Promise<User>;
   // ── Market ─────────────────────────────────────────────────────────
   createCoinOrder(order: InsertCoinOrder): Promise<CoinOrder>;
   getCoinOrders(type?: "buy" | "sell"): Promise<CoinOrder[]>;
@@ -145,6 +147,22 @@ export class DatabaseStorage implements IStorage {
     }
 
     return true; // New day — limit resets
+  }
+
+  async updateUserProfile(id: number, data: UpdateProfile): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({
+        username:    data.username,
+        email:       data.email,
+        firstName:   data.firstName   ?? null,
+        lastName:    data.lastName    ?? null,
+        displayName: data.displayName ?? null,
+        phone:       data.phone       ?? null,
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return updated;
   }
 
   // ── Market methods ───────────────────────────────────────────────────

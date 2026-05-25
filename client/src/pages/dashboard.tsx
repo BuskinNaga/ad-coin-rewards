@@ -25,6 +25,7 @@ import {
   Send,
   Clock,
   ShoppingCart,
+  UserCircle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -190,6 +191,15 @@ const telegramShare = () => {
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end" className="w-52">
+              <Link href="/profile">
+                <DropdownMenuItem className="cursor-pointer gap-3" data-testid="menu-edit-profile">
+                  <UserCircle className="w-4 h-4 text-emerald-400" />
+                  Edit Profile
+                </DropdownMenuItem>
+              </Link>
+
+              <DropdownMenuSeparator />
+
               <Link href="/faq">
                 <DropdownMenuItem className="cursor-pointer gap-3">
                   <HelpCircle className="w-4 h-4 text-primary" />

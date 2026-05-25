@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { type Server } from "http";
 import { storage } from "./storage.js";
 import { api } from "../shared/routes.js";
+import { updateProfileSchema } from "../shared/schema.js";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -229,6 +230,52 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     } catch (err) {
       console.error("MINE ERROR:", err);
       return res.status(500).json({ message: "Mining failed" });
+    }
+  });
+
+  // ── PROFILE ───────────────────────────────────────────────────────────
+
+  app.get("/api/profile", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = await storage.getUser(req.userId!);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      const { password: _, ...safe } = user;
+      return res.json(safe);
+    } catch (err) {
+      console.error("PROFILE GET ERROR:", err);
+      return res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
+  app.patch("/api/profile", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const parsed = updateProfileSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.errors[0].message });
+      }
+
+      const { username, email } = parsed.data;
+      const currentUser = await storage.getUser(req.userId!);
+      if (!currentUser) return res.status(404).json({ message: "User not found" });
+
+      // Check username uniqueness (allow keeping own username)
+      if (username !== currentUser.username) {
+        const existing = await storage.getUserByUsername(username);
+        if (existing) return res.status(409).json({ message: "Username already taken" });
+      }
+
+      // Check email uniqueness (allow keeping own email)
+      if (email !== currentUser.email) {
+        const existing = await storage.getUserByEmail(email);
+        if (existing) return res.status(409).json({ message: "Email already in use" });
+      }
+
+      const updated = await storage.updateUserProfile(req.userId!, parsed.data);
+      const { password: _, ...safe } = updated;
+      return res.json(safe);
+    } catch (err) {
+      console.error("PROFILE PATCH ERROR:", err);
+      return res.status(500).json({ message: "Failed to update profile" });
     }
   });
 

@@ -12,6 +12,12 @@ export const userResponseSchema = z.object({
   id: z.number(),
   username: z.string(),
   email: z.string(),
+  // ── Profile fields ──────────────────────────────
+  firstName:   z.string().nullable().optional(),
+  lastName:    z.string().nullable().optional(),
+  displayName: z.string().nullable().optional(),
+  phone:       z.string().nullable().optional(),
+  // ── Balances & tracking ─────────────────────────
   coins: z.number(),
   totalEarned: z.number(),
   dailyAdsWatched: z.number(),

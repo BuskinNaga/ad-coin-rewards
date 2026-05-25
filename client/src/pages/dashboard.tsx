@@ -165,7 +165,7 @@ const telegramShare = () => {
     <div className="max-w-xl mx-auto p-4 pt-8 md:pt-12">
       <header className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-display font-bold">Hello, {user.username} 👋‹</h1>
+          <h1 className="text-2xl font-display font-bold">Hello, {user.displayName || (user.firstName ? user.firstName : user.username)} 👋</h1>
           <p className="text-muted-foreground text-sm">Ready to earn some cash?</p>
         </div>
 

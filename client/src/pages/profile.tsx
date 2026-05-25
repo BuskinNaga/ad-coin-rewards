@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -17,8 +17,14 @@ import {
   CheckCircle2,
   ShieldCheck,
   Loader2,
+  Globe,
+  Lock,
+  Camera,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-auth";
+import { api } from "@shared/routes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -32,97 +38,212 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
-const profileSchema = z.object({
-  firstName:   z.string().max(50, "Max 50 characters").optional().or(z.literal("")),
-  lastName:    z.string().max(50, "Max 50 characters").optional().or(z.literal("")),
-  displayName: z.string().max(60, "Max 60 characters").optional().or(z.literal("")),
-  phone:       z.string().max(20, "Max 20 characters").optional().or(z.literal("")),
-  username:    z.string()
+// ── Schemas ────────────────────────────────────────────────────────────────
+
+const publicSchema = z.object({
+  username: z
+    .string()
     .min(3, "At least 3 characters")
     .max(30, "Max 30 characters")
-    .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers, and underscores"),
-  email:       z.string().email("Enter a valid email address"),
+    .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers, underscores"),
+  displayName: z.string().max(60, "Max 60 characters").optional().or(z.literal("")),
 });
 
-type ProfileForm = z.infer<typeof profileSchema>;
+const privateSchema = z.object({
+  firstName: z.string().max(50, "Max 50 characters").optional().or(z.literal("")),
+  lastName:  z.string().max(50, "Max 50 characters").optional().or(z.literal("")),
+  email:     z.string().email("Enter a valid email address"),
+  phone:     z.string().max(20, "Max 20 digits").optional().or(z.literal("")),
+});
 
-function InitialsAvatar({ name, size = "lg" }: { name: string; size?: "sm" | "lg" }) {
+type PublicForm  = z.infer<typeof publicSchema>;
+type PrivateForm = z.infer<typeof privateSchema>;
+
+// ── Avatar component ────────────────────────────────────────────────────────
+
+function Avatar({ name, size = "lg" }: { name: string; size?: "sm" | "lg" }) {
   const initials = name
-    .split(" ")
+    .split(/\s+/)
     .map((w) => w[0])
     .slice(0, 2)
     .join("")
     .toUpperCase() || "?";
 
-  const cls = size === "lg"
-    ? "w-20 h-20 text-2xl"
-    : "w-10 h-10 text-sm";
+  const cls = size === "lg" ? "w-24 h-24 text-3xl" : "w-10 h-10 text-sm";
 
   return (
-    <div className={`${cls} rounded-full bg-gradient-to-br from-primary to-emerald-700 flex items-center justify-center text-white font-bold shadow-lg shadow-primary/30`}>
+    <div className={`${cls} relative rounded-full bg-gradient-to-br from-primary to-emerald-700 flex items-center justify-center text-white font-bold shadow-xl shadow-primary/30 shrink-0`}>
       {initials}
+      <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-secondary border-2 border-background flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors group">
+        <Camera className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+      </div>
     </div>
   );
 }
+
+// ── Success banner ──────────────────────────────────────────────────────────
+
+function SuccessBanner({ message }: { message: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -8, scale: 0.97 }}
+      transition={{ duration: 0.2 }}
+      className="flex items-center gap-2.5 text-sm text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-2xl px-4 py-3"
+      data-testid="status-profile-saved"
+    >
+      <CheckCircle2 className="w-4 h-4 shrink-0" />
+      {message}
+    </motion.div>
+  );
+}
+
+// ── Section header ──────────────────────────────────────────────────────────
+
+function SectionHeader({
+  icon: Icon,
+  title,
+  subtitle,
+  iconClass,
+}: {
+  icon: React.ElementType;
+  title: string;
+  subtitle: string;
+  iconClass: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${iconClass}`}>
+        <Icon className="w-4 h-4" />
+      </div>
+      <div>
+        <h2 className="font-display font-bold text-base leading-tight">{title}</h2>
+        <p className="text-xs text-muted-foreground">{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ───────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
   const { data: user, isLoading } = useUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [publicSaved, setPublicSaved]   = useState(false);
+  const [privateSaved, setPrivateSaved] = useState(false);
+  const [showEmail, setShowEmail]       = useState(false);
+  const [showPhone, setShowPhone]       = useState(false);
 
-  const form = useForm<ProfileForm>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      firstName:   "",
-      lastName:    "",
-      displayName: "",
-      phone:       "",
-      username:    "",
-      email:       "",
-    },
+  // ── Forms ──────────────────────────────────────────────────────────────
+
+  const publicForm = useForm<PublicForm>({
+    resolver: zodResolver(publicSchema),
+    defaultValues: { username: "", displayName: "" },
   });
 
-  // Populate form when user data arrives
-  useEffect(() => {
-    if (user) {
-      form.reset({
-        firstName:   user.firstName   ?? "",
-        lastName:    user.lastName    ?? "",
-        displayName: user.displayName ?? "",
-        phone:       user.phone       ?? "",
-        username:    user.username    ?? "",
-        email:       user.email       ?? "",
-      });
-    }
-  }, [user, form]);
+  const privateForm = useForm<PrivateForm>({
+    resolver: zodResolver(privateSchema),
+    defaultValues: { firstName: "", lastName: "", email: "", phone: "" },
+  });
 
-  const updateMutation = useMutation({
-    mutationFn: (data: ProfileForm) =>
-      apiRequest("PATCH", "/api/profile", {
-        ...data,
-        firstName:   data.firstName   || undefined,
-        lastName:    data.lastName    || undefined,
-        displayName: data.displayName || undefined,
-        phone:       data.phone       || undefined,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      toast({
-        title: "Profile updated!",
-        description: "Your details have been saved successfully.",
+  // Populate forms when user loads
+  useEffect(() => {
+    if (!user) return;
+    publicForm.reset({
+      username:    user.username    ?? "",
+      displayName: user.displayName ?? "",
+    });
+    privateForm.reset({
+      firstName: user.firstName ?? "",
+      lastName:  user.lastName  ?? "",
+      email:     user.email     ?? "",
+      phone:     user.phone     ?? "",
+    });
+  }, [user]);  // eslint-disable-line
+
+  // ── Shared save logic ──────────────────────────────────────────────────
+
+  const buildPayload = (overrides: Partial<PublicForm & PrivateForm>) => ({
+    username:    publicForm.getValues("username"),
+    displayName: publicForm.getValues("displayName") || undefined,
+    firstName:   privateForm.getValues("firstName")  || undefined,
+    lastName:    privateForm.getValues("lastName")   || undefined,
+    email:       privateForm.getValues("email"),
+    phone:       privateForm.getValues("phone")      || undefined,
+    ...overrides,
+  });
+
+  const applyToCache = (patch: Partial<typeof user>) => {
+    queryClient.setQueryData(
+      [api.auth.me.path],
+      (old: typeof user) => old ? { ...old, ...patch } : old
+    );
+  };
+
+  // ── Public profile mutation ────────────────────────────────────────────
+
+  const publicMutation = useMutation({
+    mutationFn: async (data: PublicForm) => {
+      const payload = buildPayload(data);
+      const res = await apiRequest("PATCH", "/api/profile", payload);
+      return res.json();
+    },
+    onSuccess: (updated) => {
+      // Instant cache update — no page refresh needed
+      applyToCache({
+        username:    updated.username,
+        displayName: updated.displayName,
       });
+      publicForm.reset({
+        username:    updated.username    ?? "",
+        displayName: updated.displayName ?? "",
+      });
+      setPublicSaved(true);
+      setTimeout(() => setPublicSaved(false), 4000);
+      toast({ title: "Public profile updated!", description: "Changes are live across the app." });
     },
     onError: async (err: any) => {
-      let msg = "Failed to save changes. Please try again.";
-      try {
-        const body = await err.json?.();
-        if (body?.message) msg = body.message;
-      } catch {}
+      let msg = "Failed to save. Please try again.";
+      try { const b = await err?.response?.json?.(); if (b?.message) msg = b.message; } catch {}
       toast({ title: "Error", description: msg, variant: "destructive" });
     },
   });
 
-  const onSubmit = (data: ProfileForm) => updateMutation.mutate(data);
+  // ── Private details mutation ───────────────────────────────────────────
+
+  const privateMutation = useMutation({
+    mutationFn: async (data: PrivateForm) => {
+      const payload = buildPayload(data);
+      const res = await apiRequest("PATCH", "/api/profile", payload);
+      return res.json();
+    },
+    onSuccess: (updated) => {
+      applyToCache({
+        firstName: updated.firstName,
+        lastName:  updated.lastName,
+        email:     updated.email,
+        phone:     updated.phone,
+      });
+      privateForm.reset({
+        firstName: updated.firstName ?? "",
+        lastName:  updated.lastName  ?? "",
+        email:     updated.email     ?? "",
+        phone:     updated.phone     ?? "",
+      });
+      setPrivateSaved(true);
+      setTimeout(() => setPrivateSaved(false), 4000);
+      toast({ title: "Private details saved!", description: "Your verification info is up to date." });
+    },
+    onError: async (err: any) => {
+      let msg = "Failed to save. Please try again.";
+      try { const b = await err?.response?.json?.(); if (b?.message) msg = b.message; } catch {}
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
+
+  // ── Loading state ──────────────────────────────────────────────────────
 
   if (isLoading || !user) {
     return (
@@ -132,17 +253,19 @@ export default function ProfilePage() {
     );
   }
 
-  const displayLabel = user.displayName || user.firstName
-    ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.username
-    : user.username;
+  const displayLabel = user.displayName
+    || [user.firstName, user.lastName].filter(Boolean).join(" ")
+    || user.username;
 
-  const usdtValue = (user.coins / 1000).toFixed(2);
+  const usdtValue      = (user.coins / 1000).toFixed(2);
   const totalUsdtValue = (user.totalEarned / 1000).toFixed(2);
+
+  // ── Render ─────────────────────────────────────────────────────────────
 
   return (
     <div className="max-w-xl mx-auto p-4 pt-8 pb-28">
 
-      {/* Header */}
+      {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 mb-6">
         <Link href="/">
           <button
@@ -153,270 +276,356 @@ export default function ProfilePage() {
           </button>
         </Link>
         <div>
-          <h1 className="text-2xl font-display font-bold">Edit Profile</h1>
-          <p className="text-sm text-muted-foreground">Manage your personal details</p>
+          <h1 className="text-2xl font-display font-bold">Profile Settings</h1>
+          <p className="text-sm text-muted-foreground">Manage your account details</p>
         </div>
       </div>
 
-      {/* Avatar + name card */}
+      {/* ── Avatar + identity card ──────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden glass-card rounded-3xl p-5 mb-5 flex items-center gap-4"
+        className="glass-card rounded-3xl p-5 mb-5 flex items-center gap-5"
       >
-        <InitialsAvatar name={displayLabel} size="lg" />
+        <Avatar name={displayLabel} />
         <div className="flex-1 min-w-0">
-          <p className="font-display font-bold text-lg leading-tight truncate">{displayLabel}</p>
-          <p className="text-sm text-muted-foreground truncate">@{user.username}</p>
-          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-        </div>
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-          <Pencil className="w-4 h-4 text-primary" />
+          <p
+            className="font-display font-bold text-xl leading-tight truncate"
+            data-testid="text-display-name"
+          >
+            {displayLabel}
+          </p>
+          <p className="text-sm text-muted-foreground truncate" data-testid="text-username">
+            @{user.username}
+          </p>
+          {user.firstName && user.lastName && (
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+              {user.firstName} {user.lastName}
+            </p>
+          )}
         </div>
       </motion.div>
 
-      {/* Stats row */}
+      {/* ── Stats ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 mb-5">
-        <div className="glass-card rounded-2xl p-4 flex items-center gap-3">
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.05 }}
+          className="glass-card rounded-2xl p-4 flex items-center gap-3"
+        >
           <div className="w-9 h-9 rounded-xl bg-yellow-400/10 flex items-center justify-center shrink-0">
             <Coins className="w-5 h-5 text-yellow-400" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Balance</p>
-            <p className="font-bold text-sm">{user.coins.toLocaleString()} <span className="text-muted-foreground font-normal">coins</span></p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Balance</p>
+            <p className="font-bold text-sm leading-tight">{user.coins.toLocaleString()} coins</p>
             <p className="text-[10px] text-muted-foreground">≈ ${usdtValue} USDT</p>
           </div>
-        </div>
-        <div className="glass-card rounded-2xl p-4 flex items-center gap-3">
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.08 }}
+          className="glass-card rounded-2xl p-4 flex items-center gap-3"
+        >
           <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
             <TrendingUp className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Total Earned</p>
-            <p className="font-bold text-sm">{user.totalEarned.toLocaleString()} <span className="text-muted-foreground font-normal">coins</span></p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Total Earned</p>
+            <p className="font-bold text-sm leading-tight">{user.totalEarned.toLocaleString()} coins</p>
             <p className="text-[10px] text-muted-foreground">≈ ${totalUsdtValue} USDT</p>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      {/* KYC notice */}
-      <div className="glass-card rounded-2xl p-4 flex items-start gap-3 border border-blue-400/15 mb-5">
-        <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          Your profile details are used for{" "}
-          <span className="font-semibold text-foreground">KYC verification</span> and{" "}
-          <span className="font-semibold text-foreground">withdrawal processing</span>.
-          Keep them accurate and up to date.
-        </p>
-      </div>
+      {/* ══════════════════════════════════════════════════════════════════
+          SECTION A — PUBLIC PROFILE
+      ══════════════════════════════════════════════════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="glass-card rounded-3xl p-5 mb-4 border border-primary/10"
+      >
+        <SectionHeader
+          icon={Globe}
+          title="Public Profile"
+          subtitle="Visible to other users in the app"
+          iconClass="bg-primary/10 text-primary"
+        />
 
-      {/* Form */}
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-
-          {/* Name row */}
-          <div className="grid grid-cols-2 gap-3">
-            <FormField
-              control={form.control}
-              name="firstName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs text-muted-foreground uppercase tracking-widest">
-                    First Name
-                  </FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        {...field}
-                        placeholder="John"
-                        data-testid="input-first-name"
-                        className="pl-9 rounded-xl bg-secondary/50 border-white/10"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage className="text-xs" />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs text-muted-foreground uppercase tracking-widest">
-                    Last Name
-                  </FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        {...field}
-                        placeholder="Doe"
-                        data-testid="input-last-name"
-                        className="pl-9 rounded-xl bg-secondary/50 border-white/10"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage className="text-xs" />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          {/* Display name */}
-          <FormField
-            control={form.control}
-            name="displayName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs text-muted-foreground uppercase tracking-widest">
-                  Display Name
-                </FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <Pencil className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      {...field}
-                      placeholder="How you appear in the app"
-                      data-testid="input-display-name"
-                      className="pl-9 rounded-xl bg-secondary/50 border-white/10"
-                    />
-                  </div>
-                </FormControl>
-                <FormMessage className="text-xs" />
-              </FormItem>
-            )}
-          />
-
-          {/* Username */}
-          <FormField
-            control={form.control}
-            name="username"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs text-muted-foreground uppercase tracking-widest">
-                  Username <span className="text-rose-400">*</span>
-                </FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      {...field}
-                      placeholder="your_username"
-                      data-testid="input-username"
-                      className="pl-9 rounded-xl bg-secondary/50 border-white/10"
-                    />
-                  </div>
-                </FormControl>
-                <FormMessage className="text-xs" />
-              </FormItem>
-            )}
-          />
-
-          {/* Email */}
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs text-muted-foreground uppercase tracking-widest">
-                  Email Address <span className="text-rose-400">*</span>
-                </FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      {...field}
-                      type="email"
-                      placeholder="you@example.com"
-                      data-testid="input-email"
-                      className="pl-9 rounded-xl bg-secondary/50 border-white/10"
-                    />
-                  </div>
-                </FormControl>
-                <FormMessage className="text-xs" />
-              </FormItem>
-            )}
-          />
-
-          {/* Phone */}
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs text-muted-foreground uppercase tracking-widest">
-                  Phone Number <span className="text-muted-foreground font-normal">(optional)</span>
-                </FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      {...field}
-                      type="tel"
-                      placeholder="+91 98765 43210"
-                      data-testid="input-phone"
-                      className="pl-9 rounded-xl bg-secondary/50 border-white/10"
-                    />
-                  </div>
-                </FormControl>
-                <FormMessage className="text-xs" />
-              </FormItem>
-            )}
-          />
-
-          {/* Save button */}
-          <Button
-            type="submit"
-            data-testid="button-save-profile"
-            disabled={updateMutation.isPending}
-            className="w-full rounded-2xl h-12 text-base font-semibold mt-2"
+        <Form {...publicForm}>
+          <form
+            onSubmit={publicForm.handleSubmit((d) => publicMutation.mutate(d))}
+            className="space-y-4"
           >
-            {updateMutation.isPending ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Saving…
-              </span>
-            ) : updateMutation.isSuccess ? (
-              <span className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                Saved!
-              </span>
-            ) : (
-              "Save Changes"
-            )}
-          </Button>
+            {/* Username */}
+            <FormField
+              control={publicForm.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs text-muted-foreground uppercase tracking-widest">
+                    Username <span className="text-rose-400 ml-0.5">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        {...field}
+                        placeholder="your_username"
+                        data-testid="input-username"
+                        className="pl-9 rounded-xl bg-secondary/50 border-white/10 focus:border-primary/50"
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
 
-          {updateMutation.isSuccess && (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-2xl px-4 py-3"
-              data-testid="status-profile-saved"
+            {/* Display name */}
+            <FormField
+              control={publicForm.control}
+              name="displayName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs text-muted-foreground uppercase tracking-widest">
+                    Display Name
+                    <span className="ml-1.5 text-[10px] text-muted-foreground font-normal normal-case tracking-normal">(shown in app instead of username)</span>
+                  </FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Pencil className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        {...field}
+                        placeholder="e.g. John D."
+                        data-testid="input-display-name"
+                        className="pl-9 rounded-xl bg-secondary/50 border-white/10 focus:border-primary/50"
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+
+            <Button
+              type="submit"
+              data-testid="button-save-public"
+              disabled={publicMutation.isPending}
+              className="w-full rounded-2xl h-11 font-semibold"
             >
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              Profile updated successfully. Changes are live across the app.
-            </motion.div>
-          )}
-        </form>
-      </Form>
+              {publicMutation.isPending ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving…
+                </span>
+              ) : "Save Public Profile"}
+            </Button>
 
-      {/* KYC link */}
-      <div className="mt-6">
+            <AnimatePresence>
+              {publicSaved && (
+                <SuccessBanner message="Public profile updated instantly — no refresh needed." />
+              )}
+            </AnimatePresence>
+          </form>
+        </Form>
+      </motion.div>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          SECTION B — PRIVATE VERIFICATION DETAILS
+      ══════════════════════════════════════════════════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="glass-card rounded-3xl p-5 mb-4 border border-blue-400/10"
+      >
+        <SectionHeader
+          icon={Lock}
+          title="Private Verification Details"
+          subtitle="Only visible to you — used for KYC & withdrawals"
+          iconClass="bg-blue-400/10 text-blue-400"
+        />
+
+        {/* KYC notice */}
+        <div className="flex items-start gap-2.5 bg-blue-400/5 border border-blue-400/15 rounded-xl px-3.5 py-3 mb-4">
+          <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Accurate details are required for{" "}
+            <span className="text-foreground font-semibold">identity verification</span> before
+            you can withdraw your earnings.
+          </p>
+        </div>
+
+        <Form {...privateForm}>
+          <form
+            onSubmit={privateForm.handleSubmit((d) => privateMutation.mutate(d))}
+            className="space-y-4"
+          >
+            {/* First / Last name row */}
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={privateForm.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs text-muted-foreground uppercase tracking-widest">
+                      First Name
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          {...field}
+                          placeholder="John"
+                          data-testid="input-first-name"
+                          className="pl-9 rounded-xl bg-secondary/50 border-white/10 focus:border-primary/50"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={privateForm.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs text-muted-foreground uppercase tracking-widest">
+                      Last Name
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          {...field}
+                          placeholder="Doe"
+                          data-testid="input-last-name"
+                          className="pl-9 rounded-xl bg-secondary/50 border-white/10 focus:border-primary/50"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Email */}
+            <FormField
+              control={privateForm.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs text-muted-foreground uppercase tracking-widest">
+                    Email Address <span className="text-rose-400 ml-0.5">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        {...field}
+                        type={showEmail ? "text" : "email"}
+                        placeholder="you@example.com"
+                        data-testid="input-email"
+                        className="pl-9 pr-10 rounded-xl bg-secondary/50 border-white/10 focus:border-primary/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEmail((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showEmail ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+
+            {/* Phone */}
+            <FormField
+              control={privateForm.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs text-muted-foreground uppercase tracking-widest">
+                    Phone Number
+                    <span className="ml-1.5 text-[10px] text-muted-foreground font-normal normal-case tracking-normal">(optional)</span>
+                  </FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        {...field}
+                        type={showPhone ? "text" : "tel"}
+                        placeholder="+91 98765 43210"
+                        data-testid="input-phone"
+                        className="pl-9 pr-10 rounded-xl bg-secondary/50 border-white/10 focus:border-primary/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPhone((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPhone ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+
+            <Button
+              type="submit"
+              data-testid="button-save-private"
+              disabled={privateMutation.isPending}
+              variant="outline"
+              className="w-full rounded-2xl h-11 font-semibold border-blue-400/30 hover:border-blue-400/60 hover:bg-blue-400/5"
+            >
+              {privateMutation.isPending ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving…
+                </span>
+              ) : "Save Verification Details"}
+            </Button>
+
+            <AnimatePresence>
+              {privateSaved && (
+                <SuccessBanner message="Verification details saved securely." />
+              )}
+            </AnimatePresence>
+          </form>
+        </Form>
+      </motion.div>
+
+      {/* ── KYC shortcut ────────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
         <Link href="/kyc">
-          <div className="glass-card rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-white/5 transition-colors group">
+          <div className="glass-card rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-white/5 transition-colors group border border-white/5">
             <div className="w-10 h-10 rounded-xl bg-blue-400/10 flex items-center justify-center shrink-0">
               <ShieldCheck className="w-5 h-5 text-blue-400" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-sm">KYC Verification</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Complete identity verification to unlock withdrawals</p>
+              <p className="font-semibold text-sm">Complete KYC Verification</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Identity verification required before withdrawals
+              </p>
             </div>
             <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-180 group-hover:text-foreground transition-colors" />
           </div>
         </Link>
-      </div>
+      </motion.div>
     </div>
   );
 }

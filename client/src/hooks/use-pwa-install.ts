@@ -5,7 +5,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-// Store prompt globally so it survives banner dismissal
+// Store deferred prompt globally — survives component unmounts and banner dismissal
 let _deferred: BeforeInstallPromptEvent | null = null;
 const _subs: Array<(p: BeforeInstallPromptEvent | null) => void> = [];
 
@@ -17,14 +17,28 @@ if (typeof window !== "undefined") {
   });
 }
 
+export function detectPlatform(): "ios" | "android" | "other" {
+  if (typeof window === "undefined") return "other";
+  const ua = navigator.userAgent;
+  if (/iPad|iPhone|iPod/.test(ua)) return "ios";
+  if (/android/i.test(ua)) return "android";
+  return "other";
+}
+
+export function isInStandaloneMode(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as any).standalone === true
+  );
+}
+
 export function usePWAInstall() {
-  const [prompt, setPrompt]       = useState<BeforeInstallPromptEvent | null>(_deferred);
+  const [prompt, setPrompt]         = useState<BeforeInstallPromptEvent | null>(_deferred);
   const [isInstalled, setInstalled] = useState(false);
 
   useEffect(() => {
-    // Already running in standalone (installed)
-    const mq = window.matchMedia("(display-mode: standalone)");
-    if (mq.matches) setInstalled(true);
+    if (isInStandaloneMode()) setInstalled(true);
 
     const onInstalled = () => {
       setInstalled(true);
@@ -59,8 +73,10 @@ export function usePWAInstall() {
   };
 
   return {
-    isInstallable: !!prompt && !isInstalled,
+    hasNativePrompt: !!prompt,       // Android Chrome — real install prompt available
+    isInstallable:   !!prompt && !isInstalled,
     isInstalled,
+    platform: detectPlatform(),
     promptInstall,
   };
 }

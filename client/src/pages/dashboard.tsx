@@ -25,10 +25,9 @@ import {
   Clock,
   ShoppingCart,
   UserCircle,
-  Download,
 } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
-import { usePWAInstall } from "@/hooks/use-pwa-install";
+import { DownloadAppItem } from "@/components/pwa-install-banner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +42,6 @@ export default function Dashboard() {
   const logout = useLogout();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
-  const { isInstallable, isInstalled, promptInstall } = usePWAInstall();
 
   const [miningTimeLeft, setMiningTimeLeft] = useState(0);
   const [canMine, setCanMine] = useState(true);
@@ -239,23 +237,11 @@ const telegramShare = () => {
                 </DropdownMenuItem>
               </Link>
 
-              {(isInstallable || isInstalled) && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="cursor-pointer gap-3"
-                    onClick={isInstallable ? promptInstall : undefined}
-                    data-testid="menu-install-app"
-                  >
-                    <Download className="w-4 h-4 text-primary" />
-                    {isInstalled ? (
-                      <span className="text-emerald-400">App Installed ✓</span>
-                    ) : (
-                      "Download App"
-                    )}
-                  </DropdownMenuItem>
-                </>
-              )}
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem asChild className="p-0">
+                <DownloadAppItem />
+              </DropdownMenuItem>
 
               <DropdownMenuSeparator />
 

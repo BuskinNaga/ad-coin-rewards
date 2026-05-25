@@ -40,6 +40,25 @@ const COOKIE_OPTS = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
+// Returns all profile-safe fields (no password) — used by auth/me, login, register
+function safeUser(user: Awaited<ReturnType<typeof storage.getUser>> & object) {
+  return {
+    id:              user.id,
+    username:        user.username,
+    email:           user.email,
+    firstName:       user.firstName  ?? null,
+    lastName:        user.lastName   ?? null,
+    displayName:     user.displayName ?? null,
+    phone:           user.phone      ?? null,
+    avatarUrl:       user.avatarUrl  ?? null,
+    coins:           user.coins,
+    totalEarned:     user.totalEarned,
+    dailyAdsWatched: user.dailyAdsWatched,
+    referralCode:    user.referralCode,
+    lastAdDate:      user.lastAdDate ?? null,
+  };
+}
+
 export async function registerRoutes(httpServer: Server, app: Express) {
   app.use(cookieParser());
 
@@ -79,16 +98,7 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
       res.cookie("auth_token", token, COOKIE_OPTS);
 
-      return res.status(201).json({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        coins: user.coins,
-        totalEarned: user.totalEarned,
-        dailyAdsWatched: user.dailyAdsWatched,
-        referralCode: user.referralCode,
-        lastAdDate: user.lastAdDate ?? null,
-      });
+      return res.status(201).json(safeUser(user));
     } catch (err) {
       console.error("REGISTER ERROR:", err);
       if (err instanceof z.ZodError)
@@ -118,16 +128,7 @@ export async function registerRoutes(httpServer: Server, app: Express) {
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
       res.cookie("auth_token", token, COOKIE_OPTS);
 
-      return res.status(200).json({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        coins: user.coins,
-        totalEarned: user.totalEarned,
-        dailyAdsWatched: user.dailyAdsWatched,
-        referralCode: user.referralCode,
-        lastAdDate: user.lastAdDate ?? null,
-      });
+      return res.status(200).json(safeUser(user));
     } catch (err) {
       console.error("LOGIN ERROR:", err);
       if (err instanceof z.ZodError)
@@ -139,16 +140,7 @@ export async function registerRoutes(httpServer: Server, app: Express) {
   app.get(api.auth.me.path, authMiddleware, async (req: Request, res: Response) => {
     const user = await storage.getUser(req.userId!);
     if (!user) return res.status(401).json({ message: "User not found" });
-    return res.status(200).json({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      coins: user.coins,
-      totalEarned: user.totalEarned,
-      dailyAdsWatched: user.dailyAdsWatched,
-      referralCode: user.referralCode,
-      lastAdDate: user.lastAdDate ?? null,
-    });
+    return res.status(200).json(safeUser(user));
   });
 
   app.post(api.auth.logout.path, (_req: Request, res: Response) => {

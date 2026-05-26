@@ -3,6 +3,7 @@
   "short_name": "CashFlow",
   "description": "Watch ads, earn coins, grow your income daily with CashFlow.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a0f1a",
   "theme_color": "#10b981",
@@ -13,13 +14,25 @@
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "screenshots": [
@@ -27,7 +40,8 @@
       "src": "/og-banner.jpg",
       "sizes": "1200x630",
       "type": "image/jpeg",
-      "label": "CashFlow Dashboard"
+      "label": "CashFlow Dashboard",
+      "form_factor": "wide"
     }
   ],
   "shortcuts": [
@@ -35,13 +49,13 @@
       "name": "Watch & Earn",
       "short_name": "Watch",
       "url": "/watch",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "My Wallet",
       "short_name": "Wallet",
       "url": "/withdraw",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

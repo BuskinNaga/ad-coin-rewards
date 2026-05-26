@@ -25,9 +25,11 @@ import {
   Clock,
   ShoppingCart,
   UserCircle,
+  Download,
 } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
-import { DownloadAppItem } from "@/components/pwa-install-banner";
+import { InstallGuideModal } from "@/components/pwa-install-banner";
+import { usePWAInstall, isInStandaloneMode } from "@/hooks/use-pwa-install";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,10 +44,12 @@ export default function Dashboard() {
   const logout = useLogout();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
+  const { hasNativePrompt, isInstalled, platform, promptInstall } = usePWAInstall();
 
   const [miningTimeLeft, setMiningTimeLeft] = useState(0);
   const [canMine, setCanMine] = useState(true);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
 
   useEffect(() => {
     const updateTimer = () => {
@@ -163,6 +167,7 @@ const telegramShare = () => {
 };
 
   return (
+    <>
     <div className="max-w-xl mx-auto p-4 pt-8 md:pt-12">
       <header className="flex justify-between items-center mb-8">
         <div>
@@ -239,8 +244,24 @@ const telegramShare = () => {
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuItem asChild className="p-0">
-                <DownloadAppItem />
+              <DropdownMenuItem
+                className="cursor-pointer gap-3"
+                data-testid="menu-install-app"
+                onClick={async () => {
+                  if (isInstalled || isInStandaloneMode()) return;
+                  if (hasNativePrompt) {
+                    await promptInstall();
+                  } else {
+                    setShowInstallGuide(true);
+                  }
+                }}
+              >
+                <Download className="w-4 h-4 text-primary" />
+                {isInstalled || isInStandaloneMode() ? (
+                  <span className="text-emerald-400">App Installed ✓</span>
+                ) : (
+                  "Download App"
+                )}
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
@@ -411,5 +432,14 @@ const telegramShare = () => {
         </Link>
       </div>
     </div>
+
+    {/* PWA install guide - rendered at page level so it survives dropdown close */}
+    {showInstallGuide && (
+      <InstallGuideModal
+        platform={platform}
+        onClose={() => setShowInstallGuide(false)}
+      />
+    )}
+    </>
   );
 }

@@ -1,10 +1,12 @@
-const CACHE_NAME = "cashflow-v2";
+const CACHE_NAME = "cashflow-v3";
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",
   "/favicon.png",
   "/icon-192.png",
+  "/icon-192-maskable.png",
   "/icon-512.png",
+  "/icon-512-maskable.png",
 ];
 
 self.addEventListener("install", (event) => {
@@ -26,12 +28,10 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Always fetch API calls from network — never cache
   if (url.pathname.startsWith("/api/")) {
     return;
   }
 
-  // Network-first for navigation (HTML pages)
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request).catch(() =>
@@ -41,7 +41,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Cache-first for static assets
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;

@@ -258,14 +258,6 @@ export default function MarketPage() {
             <ShoppingCart className="w-7 h-7 text-white" />
           </div>
         </div>
-        {user && (
-          <div className="relative z-10 mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
-            <span className="text-sm text-white/70">Your balance</span>
-            <span className="font-bold text-white">
-              {user.coins.toLocaleString()} coins ≈ ${usdtValue} USDT
-            </span>
-          </div>
-        )}
       </motion.div>
 
       {/* Tabs */}

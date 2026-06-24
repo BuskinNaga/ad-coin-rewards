@@ -493,7 +493,7 @@ const telegramShare = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
+          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center px-4 pb-24 sm:pb-0"
           onClick={() => setShowDailyReward(false)}
         >
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />

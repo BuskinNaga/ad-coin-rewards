@@ -21,7 +21,7 @@ const faqs = [
   },
   {
     q: "What happens if I refresh the page during a watch?",
-    a: "If you refresh or navigate away before the 15-second timer finishes, the session is cancelled and no coins will be awarded. The ad will still open in the new tab, but you need to keep the CashFlow Watch page open for the full 15 seconds to earn.",
+    a: "If you refresh or navigate away before the 15-second timer finishes, the session is cancelled and no coins will be awarded. The ad will still open in the new tab, but you need to keep the Felix Network Watch page open for the full 15 seconds to earn.",
   },
   {
     q: "How does the Referral program work?",
@@ -84,7 +84,7 @@ export default function FAQPage() {
         </div>
         <h1 className="text-3xl font-display font-bold mb-2">FAQs</h1>
         <p className="text-muted-foreground text-sm">
-          Everything you need to know about CashFlow
+          Everything you need to know about Felix Network
         </p>
       </div>
 

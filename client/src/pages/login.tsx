@@ -30,7 +30,7 @@ export default function Login() {
           <div className="w-16 h-16 bg-gradient-to-tr from-primary to-emerald-700 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 mb-6 rotate-12">
             <Coins className="w-8 h-8 text-white -rotate-12" />
           </div>
-          <h1 className="text-4xl font-display font-bold text-gradient-primary">CashFlow</h1>
+          <h1 className="text-4xl font-display font-bold text-gradient-primary">Felix Network</h1>
           <p className="text-muted-foreground mt-2">Welcome back! Ready to earn?</p>
         </div>
 

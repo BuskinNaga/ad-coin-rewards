@@ -1,7 +1,7 @@
 {
-  "name": "CashFlow – Earn & Grow",
-  "short_name": "CashFlow",
-  "description": "Watch ads, earn coins, grow your income daily with CashFlow.",
+  "name": "Felix Network – Earn & Grow",
+  "short_name": "Felix Network",
+  "description": "Watch ads, earn coins, grow your income daily with Felix Network.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -40,7 +40,7 @@
       "src": "/og-banner.jpg",
       "sizes": "1200x630",
       "type": "image/jpeg",
-      "label": "CashFlow Dashboard",
+      "label": "Felix Network Dashboard",
       "form_factor": "wide"
     }
   ],

@@ -11,8 +11,8 @@ const sections = [
   {
     icon: Coins,
     color: "text-amber-400 bg-amber-400/10",
-    title: "The CashFlow Solution",
-    body: "CashFlow is a reward-sharing platform that puts the value back in users' hands. Every time a user watches a sponsored ad, the platform shares a portion of the ad revenue directly with them in the form of coins. No surveys, no data selling — just watch and earn.",
+    title: "The Felix Network Solution",
+    body: "Felix Network is a reward-sharing platform that puts the value back in users' hands. Every time a user watches a sponsored ad, the platform shares a portion of the ad revenue directly with them in the form of coins. No surveys, no data selling — just watch and earn.",
   },
   {
     icon: TrendingUp,
@@ -30,7 +30,7 @@ const sections = [
     icon: Users,
     color: "text-purple-400 bg-purple-400/10",
     title: "Referral & Community Growth",
-    body: "CashFlow grows through word of mouth. The referral system is live — users can already share their unique referral link and earn bonus coins when new users sign up successfully using their code. A 2% lifetime commission is awarded on every coin earned by referred users. This referral reward system creates a thriving community of earners who are incentivised to grow the platform together.",
+    body: "Felix Network grows through word of mouth. The referral system is live — users can already share their unique referral link and earn bonus coins when new users sign up successfully using their code. A 2% lifetime commission is awarded on every coin earned by referred users. This referral reward system creates a thriving community of earners who are incentivised to grow the platform together.",
   },
   {
     icon: Globe,
@@ -52,14 +52,14 @@ export default function WhitepaperPage() {
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-emerald-700 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/30">
           <Coins className="w-8 h-8 text-white" />
         </div>
-        <h1 className="text-3xl font-display font-bold mb-1">CashFlow Whitepaper</h1>
+        <h1 className="text-3xl font-display font-bold mb-1">Felix Network Whitepaper</h1>
         <p className="text-muted-foreground text-sm">v1.0 — March 2026</p>
       </motion.div>
 
       {/* Intro card */}
       <div className="glass-card rounded-3xl p-6 mb-6 border-t border-primary/20">
         <p className="text-sm leading-relaxed text-muted-foreground">
-          <span className="font-semibold text-foreground">CashFlow</span> is a mobile-first,
+          <span className="font-semibold text-foreground">Felix Network</span> is a mobile-first,
           watch-to-earn platform that redistributes digital advertising revenue to everyday users.
           This document outlines our core mission, the reward mechanism, and the roadmap for
           building a sustainable, transparent earning ecosystem.

@@ -54,7 +54,7 @@ export default function ReferralPage() {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: "Join CashFlow & Earn!",
+        title: "Join Felix Network & Earn!",
         text: `Use my referral code ${user?.referralCode} to sign up and start earning coins!`,
         url: referralLink,
       });

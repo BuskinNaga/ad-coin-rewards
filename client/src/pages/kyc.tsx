@@ -65,7 +65,7 @@ export default function KYCPage() {
         <p className="text-sm text-muted-foreground leading-relaxed">
           KYC (Know Your Customer) is a standard compliance requirement for any platform that
           handles real money or cryptocurrency payouts. It protects legitimate users from fraud,
-          ensures every withdrawal goes to a verified account, and keeps the CashFlow platform
+          ensures every withdrawal goes to a verified account, and keeps the Felix Network platform
           sustainable and trustworthy for everyone.
         </p>
       </div>

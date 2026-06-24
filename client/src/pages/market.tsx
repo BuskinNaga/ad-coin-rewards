@@ -232,7 +232,7 @@ export default function MarketPage() {
             <h1 className="text-2xl font-display font-bold">Coin Market</h1>
             <ComingSoonBadge />
           </div>
-          <p className="text-sm text-muted-foreground">Buy, sell, and trade CashFlow coins</p>
+          <p className="text-sm text-muted-foreground">Buy, sell, and trade Felix Network coins</p>
         </div>
       </div>
 

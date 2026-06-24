@@ -26,6 +26,8 @@ import {
   ShoppingCart,
   UserCircle,
   Download,
+  Globe,
+  Gift,
 } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
 import { InstallGuideModal } from "@/components/pwa-install-banner";
@@ -142,11 +144,17 @@ export default function Dashboard() {
 
   if (!user) return null;
 
-  const usdtEquivalent = (user.coins / 1000).toFixed(2);
-  const progressToWithdraw = Math.min((user.coins / 10000) * 100, 100);
   const referralLink = `${window.location.origin}/register?ref=${user.referralCode}`;
 
-const shareMessage = `Join CASH FLOW and start mining coins with me! Use my referral link: ${referralLink}`;
+  const getNetworkRank = (coins: number) => {
+    if (coins >= 100000) return { emoji: "💎", label: "Diamond Member" };
+    if (coins >= 50000) return { emoji: "🥇", label: "Gold Member" };
+    if (coins >= 10000) return { emoji: "🥈", label: "Silver Member" };
+    return { emoji: "🥉", label: "Bronze Member" };
+  };
+  const rank = getNetworkRank(user.coins);
+
+const shareMessage = `Join Felix Network and start mining coins with me! Use my referral link: ${referralLink}`;
 
 const whatsappShare = () => {
   window.open(
@@ -160,7 +168,7 @@ const telegramShare = () => {
     `https://t.me/share/url?url=${encodeURIComponent(
       referralLink
     )}&text=${encodeURIComponent(
-      "Join CASH FLOW and start mining with me!"
+      "Join Felix Network and start mining with me!"
     )}`,
     "_blank"
   );
@@ -298,24 +306,17 @@ const telegramShare = () => {
             </div>
 
             <div className="inline-block px-3 py-1 bg-black/20 rounded-full text-sm font-medium text-white/90 backdrop-blur-sm">
-              ≈ ${usdtEquivalent} USDT
+              🪙 Coins
             </div>
           </div>
 
-          <div className="w-full md:w-1/3 bg-black/20 rounded-2xl p-4 backdrop-blur-sm">
-            <div className="flex justify-between text-sm text-white/80 mb-2">
-              <span>Withdrawal Goal</span>
-              <span>10K Coins</span>
+          <div className="bg-black/20 rounded-2xl p-4 backdrop-blur-sm text-center min-w-[148px]">
+            <div className="flex items-center justify-center gap-1.5 text-sm text-white/80 mb-3">
+              <Globe className="w-4 h-4" />
+              <span>Network Rank</span>
             </div>
-
-            <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${progressToWithdraw}%` }}
-                transition={{ duration: 1, delay: 0.5 }}
-                className="h-full bg-accent rounded-full"
-              />
-            </div>
+            <div className="text-3xl mb-1.5">{rank.emoji}</div>
+            <div className="text-sm font-bold text-white">{rank.label}</div>
           </div>
         </div>
       </motion.div>
@@ -360,6 +361,18 @@ const telegramShare = () => {
             </>
           )}
         </div>
+      </div>
+
+      {/* Daily Reward */}
+      <div className="glass-card rounded-3xl p-5 mb-6 flex items-center gap-4">
+        <div className="w-12 h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-400 shrink-0">
+          <Gift className="w-6 h-6" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold text-base">Daily Reward</h3>
+          <p className="text-sm text-muted-foreground">Login daily to earn rewards</p>
+        </div>
+        <div className="text-2xl">🎁</div>
       </div>
 
       <div className="space-y-4">

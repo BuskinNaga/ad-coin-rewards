@@ -18,7 +18,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center">
         <Loader2 className="w-12 h-12 text-primary animate-spin" />
-        <p className="mt-4 text-muted-foreground font-medium animate-pulse">Loading CashFlow...</p>
+        <p className="mt-4 text-muted-foreground font-medium animate-pulse">Loading Felix Network...</p>
       </div>
     );
   }

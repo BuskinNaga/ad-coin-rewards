@@ -48,7 +48,7 @@ export function InstallGuideModal({ platform, onClose }: InstallGuideProps) {
               <Smartphone className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-bold text-base leading-tight">Install CashFlow</p>
+              <p className="font-bold text-base leading-tight">Install Felix Network</p>
               <p className="text-xs text-muted-foreground">
                 {isIOS ? "Add to your iPhone/iPad" : "Add to your home screen"}
               </p>
@@ -67,7 +67,7 @@ export function InstallGuideModal({ platform, onClose }: InstallGuideProps) {
                 <strong className="text-foreground">"Add to Home Screen"</strong>
               </GuideStep>
               <GuideStep number={3} icon={<Smartphone className="w-4 h-4" />}>
-                Tap <strong className="text-foreground">"Add"</strong> — done! CashFlow will appear on your home screen.
+                Tap <strong className="text-foreground">"Add"</strong> — done! Felix Network will appear on your home screen.
               </GuideStep>
               <p className="text-[10px] text-muted-foreground text-center pt-1">
                 ⚠️ This only works in Safari on iOS. Not in Chrome or Firefox.
@@ -76,7 +76,7 @@ export function InstallGuideModal({ platform, onClose }: InstallGuideProps) {
           ) : (
             <div className="space-y-3.5">
               <p className="text-sm text-muted-foreground leading-relaxed">
-                To install CashFlow on your device:
+                To install Felix Network on your device:
               </p>
               <GuideStep number={1} icon={<Download className="w-4 h-4" />}>
                 Open this page in <strong className="text-foreground">Chrome</strong> on Android
@@ -168,7 +168,7 @@ export function PWAInstallBanner() {
                 <Smartphone className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm leading-tight">Install CashFlow</p>
+                <p className="font-semibold text-sm leading-tight">Install Felix Network</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   Add to home screen for the best experience
                 </p>

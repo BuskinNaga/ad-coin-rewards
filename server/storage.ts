@@ -26,6 +26,8 @@ export interface IStorage {
   checkDailyLimit(userId: number): Promise<boolean>;
   updateUserProfile(id: number, data: UpdateProfile): Promise<User>;
   updateUserAvatar(id: number, avatarUrl: string): Promise<User>;
+  claimDailyReward(userId: number): Promise<{ coins: number; newBalance: number }>;
+  getDailyRewardStatus(userId: number): Promise<{ claimed: boolean; lastClaimDate: Date | null }>;
   // ── Market ─────────────────────────────────────────────────────────
   createCoinOrder(order: InsertCoinOrder): Promise<CoinOrder>;
   getCoinOrders(type?: "buy" | "sell"): Promise<CoinOrder[]>;
@@ -148,6 +150,29 @@ export class DatabaseStorage implements IStorage {
     }
 
     return true; // New day — limit resets
+  }
+
+  async getDailyRewardStatus(userId: number): Promise<{ claimed: boolean; lastClaimDate: Date | null }> {
+    const user = await this.getUser(userId);
+    if (!user) return { claimed: false, lastClaimDate: null };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const claimed = !!(user.lastDailyRewardDate && new Date(user.lastDailyRewardDate) >= today);
+    return { claimed, lastClaimDate: user.lastDailyRewardDate ?? null };
+  }
+
+  async claimDailyReward(userId: number): Promise<{ coins: number; newBalance: number }> {
+    const coins = Math.floor(Math.random() * 5) + 1; // 1-5 coins
+    const [updated] = await db
+      .update(users)
+      .set({
+        coins: sql`${users.coins} + ${coins}`,
+        totalEarned: sql`${users.totalEarned} + ${coins}`,
+        lastDailyRewardDate: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return { coins, newBalance: updated.coins };
   }
 
   async updateUserAvatar(id: number, avatarUrl: string): Promise<User> {

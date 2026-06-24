@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useUser, useLogout } from "@/hooks/use-auth";
 import { useTheme } from "@/components/theme-provider";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +28,10 @@ import {
   Download,
   Globe,
   Gift,
+  X,
+  Loader2,
+  CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
 import { InstallGuideModal } from "@/components/pwa-install-banner";
@@ -40,6 +44,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function Dashboard() {
   const { data: user } = useUser();
@@ -52,6 +58,26 @@ export default function Dashboard() {
   const [canMine, setCanMine] = useState(true);
   const [totalUsers, setTotalUsers] = useState(0);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
+  const [showDailyReward, setShowDailyReward] = useState(false);
+  const [claimedCoins, setClaimedCoins] = useState<number | null>(null);
+
+  const { data: rewardStatus, refetch: refetchRewardStatus } = useQuery<{ claimed: boolean; lastClaimDate: string | null }>({
+    queryKey: ["/api/daily-reward/status"],
+    staleTime: 0,
+  });
+
+  const claimReward = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/daily-reward/claim"),
+    onSuccess: async (data: any) => {
+      const json = await data.json();
+      setClaimedCoins(json.coins);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      refetchRewardStatus();
+    },
+    onError: async (err: any) => {
+      toast({ title: "Already claimed", description: "Come back tomorrow for your next reward!", variant: "destructive" });
+    },
+  });
 
   useEffect(() => {
     const updateTimer = () => {
@@ -364,16 +390,22 @@ const telegramShare = () => {
       </div>
 
       {/* Daily Reward */}
-      <div className="glass-card rounded-3xl p-5 mb-6 flex items-center gap-4">
-        <div className="w-12 h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-400 shrink-0">
-          <Gift className="w-6 h-6" />
+      <button
+        onClick={() => { setClaimedCoins(null); setShowDailyReward(true); }}
+        className="w-full glass-card rounded-3xl p-5 mb-6 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-colors text-left"
+        data-testid="button-daily-reward"
+      >
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${rewardStatus?.claimed ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}`}>
+          {rewardStatus?.claimed ? <CheckCircle2 className="w-6 h-6" /> : <Gift className="w-6 h-6" />}
         </div>
         <div className="flex-1">
           <h3 className="font-semibold text-base">Daily Reward</h3>
-          <p className="text-sm text-muted-foreground">Login daily to earn rewards</p>
+          <p className="text-sm text-muted-foreground">
+            {rewardStatus?.claimed ? "Reward claimed today ✓" : "Login daily to earn rewards"}
+          </p>
         </div>
-        <div className="text-2xl">🎁</div>
-      </div>
+        <div className="text-2xl">{rewardStatus?.claimed ? "✅" : "🎁"}</div>
+      </button>
 
       <div className="space-y-4">
         <div className="glass-card rounded-3xl p-5 mb-8">
@@ -453,6 +485,99 @@ const telegramShare = () => {
         onClose={() => setShowInstallGuide(false)}
       />
     )}
+
+    {/* Daily Reward Modal */}
+    <AnimatePresence>
+      {showDailyReward && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
+          onClick={() => setShowDailyReward(false)}
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <motion.div
+            initial={{ y: 60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 40, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 320, damping: 30 }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-sm glass-card rounded-3xl p-6 border border-amber-400/20 shadow-2xl"
+          >
+            <button
+              onClick={() => setShowDailyReward(false)}
+              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-secondary/70 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+
+            {claimedCoins === null ? (
+              <>
+                <div className="flex flex-col items-center text-center mb-6">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30 mb-4">
+                    <Gift className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-xl font-display font-bold mb-1">Daily Reward</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {rewardStatus?.claimed
+                      ? "You've already claimed today's reward. Come back tomorrow!"
+                      : "Claim your daily reward and earn 1–5 bonus coins!"}
+                  </p>
+                </div>
+
+                {rewardStatus?.claimed ? (
+                  <div className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Reward claimed today ✓
+                  </div>
+                ) : (
+                  <Button
+                    className="w-full rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-semibold shadow-lg shadow-amber-500/20"
+                    onClick={() => claimReward.mutate()}
+                    disabled={claimReward.isPending}
+                    data-testid="button-claim-reward"
+                  >
+                    {claimReward.isPending ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Claiming...</>
+                    ) : (
+                      <><Sparkles className="w-4 h-4 mr-2" /> Claim Reward</>
+                    )}
+                  </Button>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center text-center py-2">
+                <motion.div
+                  initial={{ scale: 0, rotate: -10 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                  className="text-6xl mb-4"
+                >
+                  🎁
+                </motion.div>
+                <h2 className="text-xl font-display font-bold mb-1">You earned coins!</h2>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-5xl font-bold text-amber-400 mb-2"
+                >
+                  +{claimedCoins}
+                </motion.div>
+                <p className="text-sm text-muted-foreground mb-6">Come back tomorrow for another reward!</p>
+                <Button
+                  className="w-full rounded-2xl"
+                  onClick={() => setShowDailyReward(false)}
+                >
+                  Awesome!
+                </Button>
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
     </>
   );
 }

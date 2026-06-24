@@ -21,6 +21,7 @@ export const users = pgTable("users", {
   lastMineDate: timestamp("last_mine_date"),
   referralCode: text("referral_code").notNull().unique(),
   referredBy: text("referred_by"),
+  lastDailyRewardDate: timestamp("last_daily_reward_date"),
 });
 
 export const history = pgTable("history", {

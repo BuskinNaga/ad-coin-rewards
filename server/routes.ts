@@ -184,6 +184,33 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  // ── DAILY REWARD ─────────────────────────────────────────────────────
+
+  app.get("/api/daily-reward/status", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const status = await storage.getDailyRewardStatus(req.userId!);
+      return res.json(status);
+    } catch (err) {
+      console.error("DAILY REWARD STATUS ERROR:", err);
+      return res.status(500).json({ message: "Failed to get reward status" });
+    }
+  });
+
+  app.post("/api/daily-reward/claim", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const status = await storage.getDailyRewardStatus(req.userId!);
+      if (status.claimed) {
+        return res.status(400).json({ message: "Daily reward already claimed. Come back tomorrow!" });
+      }
+      const result = await storage.claimDailyReward(req.userId!);
+      await storage.addHistory({ userId: req.userId!, coinsEarned: result.coins, type: "daily_reward" });
+      return res.json({ coins: result.coins, newBalance: result.newBalance });
+    } catch (err) {
+      console.error("DAILY REWARD CLAIM ERROR:", err);
+      return res.status(500).json({ message: "Failed to claim reward" });
+    }
+  });
+
   // ── MINE ─────────────────────────────────────────────────────────────
 
   app.post("/api/mine", authMiddleware, async (req: Request, res: Response) => {

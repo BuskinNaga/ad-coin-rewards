@@ -37,9 +37,9 @@
   ],
   "screenshots": [
     {
-      "src": "/og-banner.jpg",
-      "sizes": "1200x630",
-      "type": "image/jpeg",
+      "src": "/og-banner.png",
+      "sizes": "1080x566",
+      "type": "image/png",
       "label": "Felix Network Dashboard",
       "form_factor": "wide"
     }

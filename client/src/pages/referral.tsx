@@ -52,10 +52,11 @@ export default function ReferralPage() {
   };
 
   const handleShare = () => {
+    const shareText = `🚀 Felix Network is coming soon!\nJoin early and become part of the community.\nStart mining rewards with Felix Network.\nJoin here:\n${referralLink}`;
     if (navigator.share) {
       navigator.share({
-        title: "Join Felix Network & Earn!",
-        text: `Use my referral code ${user?.referralCode} to sign up and start earning coins!`,
+        title: "Felix Network – Join Early!",
+        text: shareText,
         url: referralLink,
       });
     } else {

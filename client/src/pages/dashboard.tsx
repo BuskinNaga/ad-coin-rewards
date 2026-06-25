@@ -180,7 +180,7 @@ export default function Dashboard() {
   };
   const rank = getNetworkRank(user.coins);
 
-const shareMessage = `Join Felix Network and start mining coins with me! Use my referral link: ${referralLink}`;
+const shareMessage = `🚀 Felix Network is coming soon!\nJoin early and become part of the community.\nStart mining rewards with Felix Network.\nJoin here:\n${referralLink}`;
 
 const whatsappShare = () => {
   window.open(
@@ -191,10 +191,8 @@ const whatsappShare = () => {
 
 const telegramShare = () => {
   window.open(
-    `https://t.me/share/url?url=${encodeURIComponent(
-      referralLink
-    )}&text=${encodeURIComponent(
-      "Join Felix Network and start mining with me!"
+    `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(
+      "🚀 Felix Network is coming soon!\nJoin early and become part of the community.\nStart mining rewards with Felix Network."
     )}`,
     "_blank"
   );

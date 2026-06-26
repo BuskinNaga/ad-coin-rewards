@@ -18,6 +18,13 @@ export default function Register() {
       const code = ref.toUpperCase().trim();
       setReferralCode(code);
       setRefFromUrl(true);
+    } else {
+      const stored = localStorage.getItem("felix_referral");
+      if (stored) {
+        setReferralCode(stored.toUpperCase().trim());
+        setRefFromUrl(true);
+        localStorage.removeItem("felix_referral");
+      }
     }
   }, []);
 

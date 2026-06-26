@@ -36,7 +36,7 @@ export default function ReferralPage() {
   });
 
   const referralLink = user
-    ? `${window.location.origin}/register?ref=${user.referralCode}`
+    ? `https://ad-coin-rewards.vercel.app/r/${user.referralCode}`
     : "";
 
   const handleCopyCode = () => {

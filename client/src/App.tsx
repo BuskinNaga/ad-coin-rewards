@@ -18,12 +18,14 @@ import WhitepaperPage from "./pages/whitepaper";
 import KYCPage from "./pages/kyc";
 import MarketPage from "./pages/market";
 import ProfilePage from "./pages/profile";
+import ReferralRedirect from "./pages/referral-redirect";
 import { AuthGuard } from "./components/layout/auth-guard";
 import { PWAInstallBanner } from "./components/pwa-install-banner";
 
 function Router() {
   return (
     <Switch>
+      <Route path="/r/:userId" component={ReferralRedirect} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
 

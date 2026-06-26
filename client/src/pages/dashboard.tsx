@@ -170,7 +170,7 @@ export default function Dashboard() {
 
   if (!user) return null;
 
-  const referralLink = `${window.location.origin}/register?ref=${user.referralCode}`;
+  const referralLink = `https://ad-coin-rewards.vercel.app/r/${user.referralCode}`;
 
   const getNetworkRank = (coins: number) => {
     if (coins >= 100000) return { emoji: "💎", label: "Diamond Member" };

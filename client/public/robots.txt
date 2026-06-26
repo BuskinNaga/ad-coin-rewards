@@ -1,4 +1,18 @@
 User-agent: *
 Allow: /
+Allow: /login
+Allow: /register
+
+Disallow: /dashboard
+Disallow: /watch
+Disallow: /history
+Disallow: /withdraw
+Disallow: /referral
+Disallow: /profile
+Disallow: /kyc
+Disallow: /market
+Disallow: /whitepaper
+Disallow: /faq
+Disallow: /r/
 
 Sitemap: https://ad-coin-rewards.vercel.app/sitemap.xml

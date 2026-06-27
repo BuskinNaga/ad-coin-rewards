@@ -19,6 +19,7 @@ import KYCPage from "./pages/kyc";
 import MarketPage from "./pages/market";
 import ProfilePage from "./pages/profile";
 import ReferralRedirect from "./pages/referral-redirect";
+import Landing from "./pages/landing";
 import { AuthGuard } from "./components/layout/auth-guard";
 import { PWAInstallBanner } from "./components/pwa-install-banner";
 
@@ -28,8 +29,9 @@ function Router() {
       <Route path="/r/:userId" component={ReferralRedirect} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/" component={Landing} />
 
-      <Route path="/">
+      <Route path="/dashboard">
         <AuthGuard><Dashboard /></AuthGuard>
       </Route>
       <Route path="/watch">

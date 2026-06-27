@@ -288,7 +288,7 @@ export default function ProfilePage() {
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/">
+        <Link href="/dashboard">
           <button
             data-testid="button-back-profile"
             className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"

@@ -45,7 +45,7 @@ export function useLogin() {
     onSuccess: (user) => {
       queryClient.setQueryData([api.auth.me.path], user);
       toast({ title: "Welcome back!" });
-      setLocation("/");
+      setLocation("/dashboard");
     },
     onError: (error: Error) => {
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
@@ -79,7 +79,7 @@ export function useRegister() {
     onSuccess: (user) => {
       queryClient.setQueryData([api.auth.me.path], user);
       toast({ title: "Account created successfully!" });
-      setLocation("/");
+      setLocation("/dashboard");
     },
     onError: (error: Error) => {
       toast({ title: "Registration failed", description: error.message, variant: "destructive" });

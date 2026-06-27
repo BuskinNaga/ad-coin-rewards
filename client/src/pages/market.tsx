@@ -222,7 +222,7 @@ export default function MarketPage() {
     <div className="max-w-xl mx-auto p-4 pt-8 pb-28">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/">
+        <Link href="/dashboard">
           <button className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
             <ChevronLeft className="w-5 h-5" />
           </button>

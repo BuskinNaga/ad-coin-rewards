@@ -1,10 +1,31 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { PlaySquare, Gift, Smartphone, Users, ChevronRight, Star, Zap, Shield } from "lucide-react";
+import { PlaySquare, Gift, Smartphone, Users, ChevronRight, Star, Zap, Shield, Loader2 } from "lucide-react";
+import { useUser } from "@/hooks/use-auth";
 
 const REFERRAL_REGISTER = "/register?ref=10491592";
 
 export default function Landing() {
+  const { data: user, isLoading } = useUser();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      setLocation("/dashboard");
+    }
+  }, [user, isLoading, setLocation]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (user) return null;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Nav */}

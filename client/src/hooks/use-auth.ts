@@ -104,7 +104,7 @@ export function useLogout() {
       queryClient.setQueryData([api.auth.me.path], null);
       queryClient.clear();
       toast({ title: "Logged out successfully" });
-      setLocation("/login");
+      setLocation("/");
     }
   });
 }

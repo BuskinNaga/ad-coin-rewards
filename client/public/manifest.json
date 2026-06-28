@@ -2,7 +2,7 @@
   "name": "Felix Network – Earn & Grow",
   "short_name": "Felix Network",
   "description": "Watch ads, earn coins, grow your income daily with Felix Network.",
-  "start_url": "/",
+  "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0a0f1a",
@@ -10,6 +10,12 @@
   "orientation": "portrait-primary",
   "categories": ["finance", "entertainment"],
   "icons": [
+    {
+      "src": "/favicon-48.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
@@ -37,7 +43,7 @@
   ],
   "screenshots": [
     {
-      "src": "/og-banner.png",
+      "src": "/felix-preview.png",
       "sizes": "1080x566",
       "type": "image/png",
       "label": "Felix Network Dashboard",

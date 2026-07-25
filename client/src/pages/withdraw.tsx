@@ -15,7 +15,7 @@ export default function WithdrawPage() {
       <h1 className="text-3xl font-display font-bold mb-4">Coming Soon</h1>
       
       <div className="glass-card p-6 rounded-2xl max-w-sm">
-        <p className="text-lg text-white font-medium leading-relaxed">
+        <p className="text-lg text-foreground font-medium leading-relaxed">
           Withdrawals are coming soon. We are working on secure payout integration.
         </p>
       </div>

@@ -273,7 +273,7 @@ export default function WatchPage() {
                 <button
                   onClick={handleWatchAnother}
                   data-testid="button-go-back"
-                  className="w-full py-4 rounded-2xl bg-secondary text-white font-semibold active:scale-95 transition-all"
+                  className="w-full py-4 rounded-2xl bg-secondary text-foreground font-semibold active:scale-95 transition-all"
                 >
                   Go Back
                 </button>

@@ -23,6 +23,7 @@ export interface IStorage {
   updateMineReward(userId: number, reward: number): Promise<User>;
   addHistory(record: Omit<History, "id" | "date">): Promise<History>;
   getHistory(userId: number): Promise<History[]>;
+  clearHistory(userId: number): Promise<void>;
   checkDailyLimit(userId: number): Promise<boolean>;
   updateUserProfile(id: number, data: UpdateProfile): Promise<User>;
   updateUserAvatar(id: number, avatarUrl: string): Promise<User>;
@@ -136,6 +137,10 @@ export class DatabaseStorage implements IStorage {
       .from(history)
       .where(eq(history.userId, userId))
       .orderBy(history.date);
+  }
+
+  async clearHistory(userId: number): Promise<void> {
+    await db.delete(history).where(eq(history.userId, userId));
   }
 
   async checkDailyLimit(userId: number): Promise<boolean> {

@@ -374,6 +374,16 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  app.delete("/api/history", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      await storage.clearHistory(req.userId!);
+      return res.status(200).json({ message: "History cleared" });
+    } catch (err) {
+      console.error("CLEAR HISTORY ERROR:", err);
+      return res.status(500).json({ message: "Failed to clear history" });
+    }
+  });
+
   // ── MARKET (future-ready, not yet activated) ──────────────────────────
 
   // GET /api/market/info — exchange rate + feature flags

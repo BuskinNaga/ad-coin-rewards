@@ -20,6 +20,10 @@ import MarketPage from "./pages/market";
 import ProfilePage from "./pages/profile";
 import ReferralRedirect from "./pages/referral-redirect";
 import Landing from "./pages/landing";
+import PrivacyPolicyPage from "./pages/privacy-policy";
+import PartnershipPage from "./pages/partnership";
+import SupportPage from "./pages/support";
+import LanguagePage from "./pages/language";
 import { AuthGuard } from "./components/layout/auth-guard";
 import { PWAInstallBanner } from "./components/pwa-install-banner";
 
@@ -60,6 +64,18 @@ function Router() {
       </Route>
       <Route path="/profile">
         <AuthGuard><ProfilePage /></AuthGuard>
+      </Route>
+      <Route path="/privacy-policy">
+        <AuthGuard><PrivacyPolicyPage /></AuthGuard>
+      </Route>
+      <Route path="/partnership">
+        <AuthGuard><PartnershipPage /></AuthGuard>
+      </Route>
+      <Route path="/support">
+        <AuthGuard><SupportPage /></AuthGuard>
+      </Route>
+      <Route path="/language">
+        <AuthGuard><LanguagePage /></AuthGuard>
       </Route>
 
       <Route component={NotFound} />

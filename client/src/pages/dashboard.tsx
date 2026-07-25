@@ -32,7 +32,22 @@ import {
   Loader2,
   CheckCircle2,
   Sparkles,
+  Trash2,
+  Shield,
+  Handshake,
+  Languages,
+  HeadphonesIcon,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { UserAvatar } from "@/components/user-avatar";
 import { InstallGuideModal } from "@/components/pwa-install-banner";
 import { usePWAInstall, isInStandaloneMode } from "@/hooks/use-pwa-install";

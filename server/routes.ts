@@ -384,6 +384,17 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     }
   });
 
+  app.delete("/api/user", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteUser(req.userId!);
+      res.clearCookie("auth_token", { httpOnly: true, sameSite: "lax", path: "/" });
+      return res.status(200).json({ message: "Account deleted" });
+    } catch (err) {
+      console.error("DELETE ACCOUNT ERROR:", err);
+      return res.status(500).json({ message: "Failed to delete account" });
+    }
+  });
+
   // ── MARKET (future-ready, not yet activated) ──────────────────────────
 
   // GET /api/market/info — exchange rate + feature flags

@@ -24,6 +24,7 @@ export interface IStorage {
   addHistory(record: Omit<History, "id" | "date">): Promise<History>;
   getHistory(userId: number): Promise<History[]>;
   clearHistory(userId: number): Promise<void>;
+  deleteUser(userId: number): Promise<void>;
   checkDailyLimit(userId: number): Promise<boolean>;
   updateUserProfile(id: number, data: UpdateProfile): Promise<User>;
   updateUserAvatar(id: number, avatarUrl: string): Promise<User>;
@@ -141,6 +142,13 @@ export class DatabaseStorage implements IStorage {
 
   async clearHistory(userId: number): Promise<void> {
     await db.delete(history).where(eq(history.userId, userId));
+  }
+
+  async deleteUser(userId: number): Promise<void> {
+    await db.delete(history).where(eq(history.userId, userId));
+    await db.delete(coinOrders).where(eq(coinOrders.userId, userId));
+    await db.delete(coinTransactions).where(eq(coinTransactions.userId, userId));
+    await db.delete(users).where(eq(users.id, userId));
   }
 
   async checkDailyLimit(userId: number): Promise<boolean> {

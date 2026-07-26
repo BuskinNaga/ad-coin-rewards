@@ -76,7 +76,7 @@ function BuyTab() {
         </div>
         <div className="flex justify-between text-sm mb-5">
           <span className="text-muted-foreground">You pay</span>
-          <span className="font-semibold">≈ 0.50 USDT</span>
+          <span className="font-semibold text-muted-foreground">TBA</span>
         </div>
         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Payment Method</p>
         <div className="grid grid-cols-2 gap-2 mb-4">
@@ -98,8 +98,7 @@ function BuyTab() {
       <div className="glass-card rounded-2xl p-4 flex items-start gap-3 border border-primary/10">
         <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Rate: <span className="font-semibold text-foreground">1000 coins = 1 USDT</span>.
-          Minimum purchase: 500 coins. Admin manually verifies each payment before coins are credited to your wallet.
+          Coin Market is currently under development. Exchange rates, payment methods, and buying/selling options will be announced when the feature officially launches.
         </p>
       </div>
     </div>
@@ -120,7 +119,7 @@ function SellTab() {
         </div>
         <div className="flex justify-between text-sm mb-5">
           <span className="text-muted-foreground">You receive</span>
-          <span className="font-semibold">≈ 1.00 USDT</span>
+          <span className="font-semibold text-muted-foreground">TBA</span>
         </div>
         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Payout Method</p>
         <div className="grid grid-cols-2 gap-2 mb-4">
@@ -172,7 +171,7 @@ function P2PTab() {
           <div className="grid grid-cols-4 px-4 py-2.5 border-b border-white/5 text-xs text-muted-foreground font-medium">
             <span>Type</span>
             <span>Coins</span>
-            <span>USDT</span>
+            <span>Price</span>
             <span>Method</span>
           </div>
           {mockOrders.map((o, i) => (
@@ -216,8 +215,6 @@ export default function MarketPage() {
   const { data: user } = useUser();
   const [activeTab, setActiveTab] = useState<Tab>("buy");
 
-  const usdtValue = user ? (user.coins / 1000).toFixed(2) : "0.00";
-
   return (
     <div className="max-w-xl mx-auto p-4 pt-8 pb-28">
       {/* Header */}
@@ -236,7 +233,7 @@ export default function MarketPage() {
         </div>
       </div>
 
-      {/* Rate card */}
+      {/* Under development card */}
       <motion.div
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
@@ -245,14 +242,9 @@ export default function MarketPage() {
         <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-[60px] -translate-y-1/3 translate-x-1/3" />
         <div className="relative z-10 flex items-center justify-between">
           <div>
-            <p className="text-xs text-white/70 uppercase tracking-widest mb-1">Exchange Rate</p>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-display font-bold text-white">1,000</span>
-              <span className="text-white/80 font-medium">coins</span>
-              <span className="text-white/60 mx-1">=</span>
-              <span className="text-3xl font-display font-bold text-white">$1</span>
-              <span className="text-white/80 font-medium">USDT</span>
-            </div>
+            <p className="text-xs text-white/70 uppercase tracking-widest mb-1">Status</p>
+            <p className="text-xl font-display font-bold text-white leading-tight">Under Development</p>
+            <p className="text-sm text-white/70 mt-1">Launching soon — stay tuned</p>
           </div>
           <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center">
             <ShoppingCart className="w-7 h-7 text-white" />

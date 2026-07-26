@@ -444,7 +444,6 @@ export default function ProfilePage() {
           <div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Balance</p>
             <p className="font-bold text-sm leading-tight">{user.coins.toLocaleString()} coins</p>
-            <p className="text-[10px] text-muted-foreground">≈ ${usdtValue} USDT</p>
           </div>
         </motion.div>
         <motion.div
@@ -459,7 +458,6 @@ export default function ProfilePage() {
           <div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Total Earned</p>
             <p className="font-bold text-sm leading-tight">{user.totalEarned.toLocaleString()} coins</p>
-            <p className="text-[10px] text-muted-foreground">≈ ${totalUsdtValue} USDT</p>
           </div>
         </motion.div>
       </div>

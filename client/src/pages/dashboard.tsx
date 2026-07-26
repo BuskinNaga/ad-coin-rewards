@@ -75,6 +75,18 @@ export default function Dashboard() {
   const [showInstallGuide, setShowInstallGuide] = useState(false);
   const [showDailyReward, setShowDailyReward] = useState(false);
   const [claimedCoins, setClaimedCoins] = useState<number | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+  const deleteAccount = useMutation({
+    mutationFn: () => apiRequest("DELETE", "/api/user"),
+    onSuccess: () => {
+      queryClient.clear();
+      window.location.href = "/";
+    },
+    onError: () => {
+      toast({ title: "Failed to delete account", description: "Please try again.", variant: "destructive" });
+    },
+  });
 
   const { data: rewardStatus, refetch: refetchRewardStatus } = useQuery<{ claimed: boolean; lastClaimDate: string | null }>({
     queryKey: ["/api/daily-reward/status"],
@@ -243,7 +255,8 @@ const telegramShare = () => {
               </button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuContent align="end" className="w-56">
+              {/* Profile */}
               <Link href="/profile">
                 <DropdownMenuItem className="cursor-pointer gap-3" data-testid="menu-edit-profile">
                   <UserCircle className="w-4 h-4 text-emerald-400" />
@@ -253,6 +266,24 @@ const telegramShare = () => {
 
               <DropdownMenuSeparator />
 
+              {/* Earn / Referrals */}
+              <Link href="/referral">
+                <DropdownMenuItem className="cursor-pointer gap-3">
+                  <Users className="w-4 h-4 text-purple-400" />
+                  Referrals
+                </DropdownMenuItem>
+              </Link>
+
+              <Link href="/history">
+                <DropdownMenuItem className="cursor-pointer gap-3">
+                  <History className="w-4 h-4 text-sky-400" />
+                  Wallet History
+                </DropdownMenuItem>
+              </Link>
+
+              <DropdownMenuSeparator />
+
+              {/* Info */}
               <Link href="/faq">
                 <DropdownMenuItem className="cursor-pointer gap-3">
                   <HelpCircle className="w-4 h-4 text-primary" />
@@ -274,13 +305,6 @@ const telegramShare = () => {
                 </DropdownMenuItem>
               </Link>
 
-              <Link href="/referral">
-                <DropdownMenuItem className="cursor-pointer gap-3">
-                  <Users className="w-4 h-4 text-purple-400" />
-                  Referrals
-                </DropdownMenuItem>
-              </Link>
-
               <Link href="/market">
                 <DropdownMenuItem className="cursor-pointer gap-3">
                   <ShoppingCart className="w-4 h-4 text-amber-400" />
@@ -291,6 +315,38 @@ const telegramShare = () => {
 
               <DropdownMenuSeparator />
 
+              {/* New pages */}
+              <Link href="/partnership">
+                <DropdownMenuItem className="cursor-pointer gap-3">
+                  <Handshake className="w-4 h-4 text-rose-400" />
+                  Partnership &amp; Ads
+                </DropdownMenuItem>
+              </Link>
+
+              <Link href="/support">
+                <DropdownMenuItem className="cursor-pointer gap-3">
+                  <HeadphonesIcon className="w-4 h-4 text-indigo-400" />
+                  Contact Support
+                </DropdownMenuItem>
+              </Link>
+
+              <Link href="/privacy-policy">
+                <DropdownMenuItem className="cursor-pointer gap-3">
+                  <Shield className="w-4 h-4 text-slate-400" />
+                  Privacy Policy
+                </DropdownMenuItem>
+              </Link>
+
+              <Link href="/language">
+                <DropdownMenuItem className="cursor-pointer gap-3">
+                  <Languages className="w-4 h-4 text-teal-400" />
+                  Language
+                </DropdownMenuItem>
+              </Link>
+
+              <DropdownMenuSeparator />
+
+              {/* Install */}
               <DropdownMenuItem
                 className="cursor-pointer gap-3"
                 data-testid="menu-install-app"
@@ -313,6 +369,7 @@ const telegramShare = () => {
 
               <DropdownMenuSeparator />
 
+              {/* Log Out */}
               <DropdownMenuItem
                 className="cursor-pointer gap-3 text-destructive focus:text-destructive"
                 onClick={() => logout.mutate()}
@@ -321,10 +378,48 @@ const telegramShare = () => {
                 <LogOut className="w-4 h-4" />
                 Log Out
               </DropdownMenuItem>
+
+              {/* Delete Account */}
+              <DropdownMenuItem
+                className="cursor-pointer gap-3 text-destructive focus:text-destructive"
+                onClick={() => setConfirmDeleteOpen(true)}
+                data-testid="button-delete-account"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Account
+              </DropdownMenuItem>
+
+              {/* Version */}
+              <div className="px-2 py-2 text-center">
+                <span className="text-[10px] text-muted-foreground/50 select-none">Version 1.0.0</span>
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </header>
+
+      {/* Delete Account Confirmation */}
+      <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete your account, all your coins, earning history, and associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-account">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-confirm-delete-account"
+              onClick={() => deleteAccount.mutate()}
+              disabled={deleteAccount.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteAccount.isPending ? "Deleting…" : "Delete My Account"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
